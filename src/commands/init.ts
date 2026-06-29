@@ -15,6 +15,7 @@ export interface InitAnswers {
   tailscaleAuthKey?: string;
   agents: AgentName[];
   sshPublicKeyPath: string;
+  claudeOauthToken?: string;
 }
 
 export function buildConfigFromAnswers(a: InitAnswers): Config {
@@ -31,6 +32,7 @@ export async function persistInit(a: InitAnswers): Promise<void> {
   await saveConfig(buildConfigFromAnswers(a));
   await setSecret(a.provider, a.token);
   if (a.tailscaleAuthKey) await setSecret('tailscale', a.tailscaleAuthKey);
+  if (a.claudeOauthToken) await setSecret('claude-code', a.claudeOauthToken);
 }
 
 export async function runInit(): Promise<void> {
@@ -54,10 +56,17 @@ export async function runInit(): Promise<void> {
     message: 'Agents to install',
     choices: AGENT_NAMES.map((a) => ({ value: a, checked: a === 'claude-code' })),
   });
+  let claudeOauthToken: string | undefined;
+  if (agents.includes('claude-code')) {
+    console.log('Optional: pre-authenticate Claude Code. Run `claude setup-token` on THIS machine and paste the token.');
+    console.log('(Leave blank to instead log in interactively on the box later. A pasted token is placed in the box\'s cloud-init metadata.)');
+    const t = await password({ message: 'Claude setup-token (optional)' });
+    claudeOauthToken = t || undefined;
+  }
   const sshPublicKeyPath = await input({
     message: 'SSH public key path',
     default: join(homedir(), '.ssh', 'id_ed25519.pub'),
   });
-  await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, agents, sshPublicKeyPath });
+  await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, agents, sshPublicKeyPath, claudeOauthToken });
   console.log('Saved. Next: roostr up');
 }

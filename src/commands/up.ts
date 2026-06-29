@@ -7,6 +7,7 @@ import { up } from '../core/orchestrator.js';
 import { detectPublicIp } from '../util/public-ip.js';
 import { probeTcp } from '../util/tcp.js';
 import { waitForReady } from '../provisioning/readiness.js';
+import { getAgentRecipe } from '../agents/index.js';
 import { readFile } from 'node:fs/promises';
 
 export interface UpFlags {
@@ -40,22 +41,45 @@ export async function runUp(flags: UpFlags): Promise<void> {
   const spec = resolveBuildSpec(config, { hasToken: !!token }, flags);
   const prov = getProvider(provider, { token: token! });
 
+  const agentRecipes = spec.agents.map(getAgentRecipe);
+
+  let tailscaleAuthKey: string | undefined;
+  if (spec.sshMode === 'tailscale') {
+    tailscaleAuthKey = (await getSecret('tailscale')) ?? undefined;
+    if (!tailscaleAuthKey) {
+      throw new ConfigError('no Tailscale auth key', 'run roostr init and choose tailscale mode');
+    }
+  }
+
+  const claudeOauthToken = (await getSecret('claude-code')) ?? undefined;
+
   const rec = await up(spec, {
     provider: prov,
     readPublicKey: (p) => readFile(p, 'utf8'),
     detectPublicIp: () => detectPublicIp(),
-    // UpDeps.waitForReady signature is (serverId, server) => Promise<ProviderServer>.
-    // The actual waitForReady impl polls via deps.getServer; the initial server param is not needed.
-    waitForReady: (serverId, _server) => waitForReady(serverId, {
+    agentRecipes,
+    tailscaleAuthKey,
+    claudeOauthToken,
+    waitForReady: (serverId, _server, probeHost) => waitForReady(serverId, {
       getServer: (id) => prov.getServer(id),
       probeTcp: (host, port) => probeTcp(host, port),
       sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
       now: () => Date.now(),
-    }),
+    }, { probeHost }),
     now: () => new Date().toISOString(),
   });
 
-  console.log(`\n  ${rec.name} is up at ${rec.publicIp}`);
-  console.log(`  Connect:  ssh dev@${rec.publicIp}`);
-  console.log(`  Then:     tmux attach   (agents + Tailscale land in a later release)\n`);
+  console.log(`\n  ${rec.name} is up`);
+  if (spec.sshMode === 'tailscale') {
+    console.log(`  Connect via roostr: roostr ssh ${spec.name}`);
+    console.log(`  Connect directly:   ssh dev@${spec.name}`);
+    console.log(`  (Tailscale must be running on your device to connect)`);
+  } else {
+    console.log(`  Connect via roostr: roostr ssh ${spec.name}`);
+    console.log(`  Connect directly:   ssh dev@${rec.publicIp}`);
+  }
+  for (const recipe of agentRecipes) {
+    console.log(`\n  ${recipe.name}: ${recipe.firstRunHint({ hasToken: !!claudeOauthToken })}`);
+  }
+  console.log('');
 }

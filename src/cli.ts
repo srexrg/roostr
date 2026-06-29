@@ -30,6 +30,11 @@ export function buildProgram(): Command {
     .option('--yes', 'skip confirmation')
     .action((name, opts) => import('./commands/destroy.js').then((m) => m.runDestroy(name, opts)));
 
+  program.command('ssh')
+    .description('SSH into a server (drops into a persistent tmux session)')
+    .argument('[name]', 'optional server name')
+    .action((name) => import('./commands/ssh.js').then((m) => m.runSsh(name)));
+
   return program;
 }
 
