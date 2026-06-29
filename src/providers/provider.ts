@@ -1,0 +1,41 @@
+import { ProviderError } from '../core/errors.js';
+
+export type ServerState = 'provisioning' | 'running' | 'stopped' | 'unknown';
+
+export interface ProviderServer {
+  id: string;
+  state: ServerState;
+  publicIp: string | null;
+}
+
+export interface CreateServerInput {
+  name: string;
+  region: string;
+  size: string;
+  image: string;
+  sshKeyIds: string[];
+  userData: string;
+}
+
+export interface FirewallInput {
+  name: string;
+  serverId: string;
+  sshSourceCidr: string; // e.g. "203.0.113.7/32"
+}
+
+export interface Provider {
+  ensureSshKey(name: string, publicKey: string): Promise<string>; // returns provider key id
+  createServer(input: CreateServerInput): Promise<ProviderServer>;
+  getServer(id: string): Promise<ProviderServer | null>;
+  listServers(): Promise<ProviderServer[]>;
+  destroyServer(id: string): Promise<void>;
+  ensureFirewall(input: FirewallInput): Promise<string>; // returns firewall id
+}
+
+export class ProviderHttpError extends ProviderError {
+  status: number;
+  constructor(status: number, message: string, hint?: string) {
+    super(message, hint);
+    this.status = status;
+  }
+}
