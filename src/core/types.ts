@@ -4,7 +4,7 @@ export type SshMode = 'tailscale' | 'direct';
 export type ServerStatus = 'active' | 'incomplete' | 'drifted';
 
 export const PROVIDER_NAMES: ProviderName[] = ['digitalocean', 'hetzner'];
-export const AGENT_NAMES: AgentName[] = ['claude-code', 'codex'];
+export const AGENT_NAMES: AgentName[] = ['claude-code'];
 
 export interface ProviderDefaults {
   region: string;
@@ -34,6 +34,7 @@ export interface ServerRecord {
   status: ServerStatus;
   snapshotId: string | null;   // reserved for hibernate milestone
   hibernatedAt: string | null; // reserved for hibernate milestone
+  firewallId?: string | null;  // provider firewall id created for this box (Plan 3)
 }
 
 export interface BuildSpec {
