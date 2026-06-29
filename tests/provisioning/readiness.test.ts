@@ -40,4 +40,16 @@ describe('waitForReady', () => {
       sleep: c.sleep, now: c.now,
     }, { intervalMs: 1000, timeoutMs: 5000 })).rejects.toThrow(/boot|running|never became/i);
   });
+
+  it('probes opts.probeHost when provided (Tailscale mode)', async () => {
+    const c = clock();
+    let probed = '';
+    const server = await waitForReady('1', {
+      getServer: async () => ({ id: '1', state: 'running', publicIp: '203.0.113.7' }),
+      probeTcp: async (host) => { probed = host; return true; },
+      sleep: c.sleep, now: c.now,
+    }, { intervalMs: 1000, timeoutMs: 60000, probeHost: 'box-1' });
+    expect(probed).toBe('box-1');
+    expect(server.id).toBe('1');
+  });
 });
