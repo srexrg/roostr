@@ -2,6 +2,7 @@ import type { BuildSpec, ServerRecord, ProviderName } from './types.js';
 import type { Provider, ProviderServer, ServerState } from '../providers/provider.js';
 import { upsertServer, listServers, getServerRecord, removeServer } from '../state/store.js';
 import { buildCloudInit } from '../provisioning/cloud-init.js';
+import { tailscaleFragment } from '../provisioning/tailscale.js';
 import { ProviderError } from './errors.js';
 import { monthlyCostUsd } from '../providers/pricing.js';
 
@@ -11,15 +12,25 @@ export interface UpDeps {
   provider: Provider;
   readPublicKey: (path: string) => Promise<string>;
   detectPublicIp: () => Promise<string>;
-  waitForReady: (serverId: string, server: ProviderServer) => Promise<ProviderServer>;
+  waitForReady: (serverId: string, server: ProviderServer, probeHost?: string) => Promise<ProviderServer>;
   now: () => string;
+  agentRecipes: import('../agents/recipe.js').AgentRecipe[];
+  tailscaleAuthKey?: string;
+  claudeOauthToken?: string;
 }
 
 export async function up(spec: BuildSpec, deps: UpDeps): Promise<ServerRecord> {
   const publicKey = await deps.readPublicKey(spec.sshPublicKeyPath);
   const keyId = await deps.provider.ensureSshKey('roostr', publicKey);
-  const myIp = await deps.detectPublicIp();
-  const userData = buildCloudInit({ username: 'dev', sshPublicKey: publicKey });
+  const isTailscale = spec.sshMode === 'tailscale';
+
+  const fragments = [
+    ...(isTailscale && deps.tailscaleAuthKey
+      ? [tailscaleFragment({ authKey: deps.tailscaleAuthKey, hostname: spec.name })]
+      : []),
+    ...deps.agentRecipes.map((r) => r.fragment({ username: 'dev', oauthToken: deps.claudeOauthToken })),
+  ];
+  const userData = buildCloudInit({ username: 'dev', sshPublicKey: publicKey, fragments });
 
   const created = await deps.provider.createServer({
     name: spec.name, region: spec.region, size: spec.size, image: DO_IMAGE,
@@ -30,15 +41,18 @@ export async function up(spec: BuildSpec, deps: UpDeps): Promise<ServerRecord> {
   const record: ServerRecord = {
     name: spec.name, provider: spec.provider, providerServerId: created.id,
     region: spec.region, size: spec.size, sshMode: spec.sshMode,
-    tailscaleName: null, publicIp: created.publicIp, agents: spec.agents,
+    tailscaleName: isTailscale ? spec.name : null, publicIp: created.publicIp, agents: spec.agents,
     createdAt: deps.now(), lastSetupAt: null, status: 'incomplete',
-    snapshotId: null, hibernatedAt: null,
+    snapshotId: null, hibernatedAt: null, firewallId: null,
   };
   await upsertServer(record);
 
-  await deps.provider.ensureFirewall({ name: `${spec.name}-fw`, serverId: created.id, sshSourceCidr: `${myIp}/32` });
-  const ready = await deps.waitForReady(created.id, created);
+  const sshSourceCidr = isTailscale ? null : `${await deps.detectPublicIp()}/32`;
+  const firewallId = await deps.provider.ensureFirewall({ name: `${spec.name}-fw`, serverId: created.id, sshSourceCidr });
+  record.firewallId = firewallId;
+  await upsertServer(record); // persist firewall id before readiness can throw
 
+  const ready = await deps.waitForReady(created.id, created, isTailscale ? spec.name : undefined);
   const finalRecord: ServerRecord = { ...record, status: 'active', publicIp: ready.publicIp, lastSetupAt: deps.now() };
   await upsertServer(finalRecord);
   return finalRecord;
@@ -47,6 +61,10 @@ export async function up(spec: BuildSpec, deps: UpDeps): Promise<ServerRecord> {
 export async function destroyServer(name: string, deps: { provider: Provider }): Promise<void> {
   const record = await getServerRecord(name);
   if (!record) throw new ProviderError(`no server named ${name}`, 'run roostr status');
+  if (record.firewallId) {
+    try { await deps.provider.destroyFirewall(record.firewallId); }
+    catch { /* best-effort: a missing/already-deleted firewall must not block teardown */ }
+  }
   await deps.provider.destroyServer(record.providerServerId);
   await removeServer(name);
 }

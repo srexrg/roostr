@@ -24,6 +24,7 @@ function fakeProvider(over: Partial<Provider> = {}): Provider {
     listServers: async () => [],
     destroyServer: async () => {},
     ensureFirewall: async () => 'fw-1',
+    destroyFirewall: async () => {},
     ...over,
   };
 }
@@ -35,6 +36,7 @@ function baseDeps(provider: Provider): UpDeps {
     detectPublicIp: async () => '203.0.113.7',
     waitForReady: async () => ({ id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }),
     now: () => '2026-06-29T00:00:00Z',
+    agentRecipes: [],
   };
 }
 
@@ -58,5 +60,20 @@ describe('orchestrator.up', () => {
     const rec = await getServerRecord('box-1');
     expect(rec?.status).toBe('incomplete');
     expect(rec?.providerServerId).toBe('srv-1'); // tracked, not orphaned
+  });
+
+  it('tailscale mode: closed firewall, records firewallId + tailscaleName, probes hostname', async () => {
+    let firewallInput: any = null;
+    let probeHost: string | undefined;
+    const provider = fakeProvider({ ensureFirewall: async (i) => { firewallInput = i; return 'fw-9'; } });
+    const deps = baseDeps(provider);
+    deps.tailscaleAuthKey = 'tskey-1';
+    deps.waitForReady = async (_id, _s, ph) => { probeHost = ph; return { id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }; };
+    const tsSpec = { ...spec, sshMode: 'tailscale' as const };
+    const rec = await up(tsSpec, deps);
+    expect(firewallInput.sshSourceCidr).toBeNull();   // zero inbound
+    expect(rec.firewallId).toBe('fw-9');
+    expect(rec.tailscaleName).toBe('box-1');
+    expect(probeHost).toBe('box-1');
   });
 });

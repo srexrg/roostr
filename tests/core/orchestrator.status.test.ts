@@ -24,6 +24,7 @@ function fakeProvider(over: Partial<Provider> = {}): Provider {
     ensureSshKey: async () => 'k', createServer: async () => ({ id: 'srv-1', state: 'running', publicIp: null }),
     getServer: async () => ({ id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }),
     listServers: async () => [], destroyServer: async () => {}, ensureFirewall: async () => 'fw',
+    destroyFirewall: async () => {},
     ...over,
   };
 }
@@ -34,6 +35,17 @@ describe('orchestrator.destroyServer', () => {
     let destroyedId = '';
     await destroyServer('box-1', { provider: fakeProvider({ destroyServer: async (id) => { destroyedId = id; } }) });
     expect(destroyedId).toBe('srv-1');
+    expect(await getServerRecord('box-1')).toBeNull();
+  });
+
+  it('deletes the firewall before the droplet, then prunes state', async () => {
+    await upsertServer({ ...rec('box-1'), firewallId: 'fw-1' });
+    const order: string[] = [];
+    await destroyServer('box-1', { provider: fakeProvider({
+      destroyFirewall: async (id) => { order.push(`fw:${id}`); },
+      destroyServer: async (id) => { order.push(`srv:${id}`); },
+    }) });
+    expect(order).toEqual(['fw:fw-1', 'srv:srv-1']);
     expect(await getServerRecord('box-1')).toBeNull();
   });
 });
