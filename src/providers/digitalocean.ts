@@ -94,12 +94,13 @@ export class DigitalOceanProvider implements Provider {
   }
   async ensureFirewall(input: FirewallInput): Promise<string> {
     const anywhere = { addresses: ['0.0.0.0/0', '::/0'] };
+    const inbound_rules = input.sshSourceCidr
+      ? [{ protocol: 'tcp', ports: '22', sources: { addresses: [input.sshSourceCidr] } }]
+      : [];
     const body = {
       name: input.name,
       droplet_ids: [Number(input.serverId)],
-      inbound_rules: [
-        { protocol: 'tcp', ports: '22', sources: { addresses: [input.sshSourceCidr] } },
-      ],
+      inbound_rules,
       outbound_rules: [
         { protocol: 'tcp', ports: 'all', destinations: anywhere },
         { protocol: 'udp', ports: 'all', destinations: anywhere },
@@ -108,6 +109,10 @@ export class DigitalOceanProvider implements Provider {
     };
     const data = await this.request<{ firewall: { id: string } }>('POST', '/firewalls', body);
     return data.firewall.id;
+  }
+
+  async destroyFirewall(id: string): Promise<void> {
+    await this.request<void>('DELETE', `/firewalls/${id}`);
   }
 }
 

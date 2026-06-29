@@ -20,7 +20,7 @@ export interface CreateServerInput {
 export interface FirewallInput {
   name: string;
   serverId: string;
-  sshSourceCidr: string; // e.g. "203.0.113.7/32"
+  sshSourceCidr: string | null; // null = no inbound rules (Tailscale mode); a CIDR = tcp/22 rule (direct mode)
 }
 
 export interface Provider {
@@ -30,6 +30,7 @@ export interface Provider {
   listServers(): Promise<ProviderServer[]>;
   destroyServer(id: string): Promise<void>;
   ensureFirewall(input: FirewallInput): Promise<string>; // returns firewall id
+  destroyFirewall(id: string): Promise<void>;
 }
 
 export class ProviderHttpError extends ProviderError {
