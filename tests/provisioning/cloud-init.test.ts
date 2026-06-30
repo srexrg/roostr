@@ -31,6 +31,14 @@ describe('buildCloudInit', () => {
     const swapIdx = out.indexOf('swap:');
     expect(sentinelIdx).toBeGreaterThan(swapIdx);
   });
+  it('includes tmux in the package list', () => {
+    expect(out).toContain('tmux');
+  });
+  it('writes the roostr profile.d script via write_files', () => {
+    expect(out).toContain('/etc/profile.d/roostr.sh');
+    expect(out).toContain('"$SSH_TTY"');
+    expect(out).toContain('exec tmux new -A -s roostr');
+  });
 });
 
 describe('buildCloudInit composition', () => {

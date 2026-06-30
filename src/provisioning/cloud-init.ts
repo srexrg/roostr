@@ -9,7 +9,7 @@ export function buildCloudInit(opts: {
   fragments?: CloudInitFragment[];
 }): string {
   const { username, sshPublicKey, fragments = [] } = opts;
-  const basePackages = ['git', 'curl', 'build-essential'];
+  const basePackages = ['git', 'curl', 'build-essential', 'tmux'];
   const packages = [...new Set([...basePackages, ...fragments.flatMap((f) => f.packages ?? [])])];
   const runcmd = [
     ...fragments.flatMap((f) => f.runcmd ?? []),
@@ -17,9 +17,23 @@ export function buildCloudInit(opts: {
     `touch ${SENTINEL_PATH}`,
   ];
 
+  const roostrProfileScript = [
+    '# roostr: drop interactive SSH logins straight into a persistent tmux session',
+    'if [ -n "$SSH_TTY" ] && [ -z "$TMUX" ] && command -v tmux >/dev/null 2>&1; then',
+    '  exec tmux new -A -s roostr',
+    'fi',
+  ].join('\n');
+
   const config = {
     disable_root: true,
     ssh_pwauth: false,
+    write_files: [
+      {
+        path: '/etc/profile.d/roostr.sh',
+        content: roostrProfileScript + '\n',
+        permissions: '0644',
+      },
+    ],
     users: [
       {
         name: username,

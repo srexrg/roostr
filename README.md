@@ -93,22 +93,22 @@ The rsync runs after the box is reachable over the tailnet, and respects `.gitig
 
 ## Connect from your phone
 
-Once a box is up, connect to it from your phone over the tailnet:
+Once a box is up, authorize your phone and connect over the tailnet:
 
 ```sh
-roostr mobile box-1                              # print a QR code to scan
-roostr mobile box-1 --key 'ssh-ed25519 AAAA...'  # also authorize a phone-generated key
+roostr mobile box-1 --sshid <your-handle>        # authorize your Termius SSH ID keys (no copy-paste)
+roostr mobile box-1 --key 'ssh-ed25519 AAAA...'  # or paste a phone-generated public key
+roostr mobile box-1                              # just (re)print the connection card + QR
 ```
 
-`roostr mobile` does three things:
+`roostr mobile` authorizes your phone's SSH key on the box, prints a connection **card** (host, user, Mosh, QR), and writes a `~/.ssh/config` block so `ssh box-1` also works from this machine. Two ways to get your phone's key onto the box:
 
-- Prints a QR code encoding `ssh://dev@<host>`. Scan it with a mobile SSH client - [Termius](https://termius.com) or [Blink](https://blink.sh) on iOS, [Termux](https://termux.dev) on Android - to add the box.
-- If you pass `--key`, it authorizes that public key on the box (appended to the `dev` user's `~/.ssh/authorized_keys`). Generate the key on the phone in your SSH app, copy the **public** key, and paste it here. The key is validated before it is sent, and only ever the public half travels.
-- Writes a `~/.ssh/config` block for the box, so `ssh box-1` works from any terminal on your tailnet.
+- **`--sshid <handle>` (smoothest):** roostr fetches your published public keys from `sshid.io/<handle>` (Termius SSH ID) over HTTPS and authorizes them - no key files, no copy-paste. Enable SSH ID in Termius first.
+- **`--key '<pubkey>'`:** generate a key in your phone's SSH app, copy the **public** half, and paste it. The key is validated before it is sent, and only the public half travels.
 
-Your phone must have the [Tailscale](https://tailscale.com/download) app installed and joined to the **same tailnet** as the box. The box has no public inbound ports - all connectivity is over Tailscale.
+Then add the host in your SSH app (scan the QR, or type the host shown on the card; user `dev`). You do **not** need to set a startup command - the box **auto-attaches the persistent `roostr` tmux session** on any interactive SSH login, so you connect straight into your running session. **Mosh** is installed, so enable it in the app and the session survives Wi-Fi/cellular handoffs.
 
-`roostr up` reminds you of this with a `From your phone: roostr mobile <name>` hint in its success output. `roostr destroy` removes the `~/.ssh/config` block it created.
+Your phone must have the [Tailscale](https://tailscale.com/download) app installed and joined to the **same tailnet** as the box. The box has no public inbound ports - all connectivity is over Tailscale. `roostr destroy` removes the `~/.ssh/config` block it created.
 
 ## Troubleshooting
 

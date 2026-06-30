@@ -46,6 +46,7 @@ export function buildProgram(): Command {
     .description('Show a QR to connect from your phone; optionally authorize a phone SSH key')
     .argument('<name>')
     .option('--key <pubkey>', 'a phone SSH public key to authorize on the box')
+    .option('--sshid <handle>', 'authorize your Termius SSH ID keys (sshid.io/<handle>)')
     .action((name, opts) => import('./commands/mobile.js').then((m) => m.runMobile(name, opts)));
 
   program.command('doctor')

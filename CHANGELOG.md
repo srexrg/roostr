@@ -34,7 +34,7 @@ account and tears it down just as fast.
 ### Connectivity
 
 - Tailscale mode: zero public inbound ports. Reach the box over your tailnet with `roostr ssh <name>` or `ssh dev@<name>`.
-- `roostr ssh` drops you into a persistent `tmux` session on the box.
+- `roostr ssh` drops you into a persistent `tmux` session on the box. Any interactive SSH login auto-attaches the same `roostr` session (via `/etc/profile.d`, guarded to TTY logins), so a phone connects straight into your running work with no startup command to configure.
 - Tailscale auth via an OAuth client (recommended): `roostr init` can take a Tailscale OAuth client id/secret and `roostr up` auto-mints a fresh single-use, `tag:devbox`, 30-minute auth key for each box, so no long-lived key sits in droplet metadata. Pasting a `tag:devbox` key you mint yourself still works.
 - Mosh is installed on the box and allowed through `ufw` on the `tailscale0` interface (UDP 60000-61000), so phone sessions survive Wi-Fi/cellular handoffs. The box joins the tailnet with `--accept-dns`.
 
@@ -56,8 +56,10 @@ account and tears it down just as fast.
 
 ### Mobile onboarding
 
-- `roostr mobile <name>` prints a QR code to connect from your phone and adds a `~/.ssh/config` block so `ssh <name>` works from any terminal on your tailnet.
+- `roostr mobile <name>` prints a connection card (host, user, Mosh, QR) and adds a `~/.ssh/config` block so `ssh <name>` works from any terminal on your tailnet.
+- `roostr mobile <name> --sshid <handle>` fetches your published Termius SSH ID keys from `sshid.io` and authorizes them on the box - no key copy-paste.
 - `roostr mobile <name> --key <pubkey>` authorizes a phone-generated SSH public key on the box.
+- Combined with tmux auto-attach, the phone path is: authorize once, then open your SSH app and tap the host to land straight in your session.
 
 ### Diagnostics
 
