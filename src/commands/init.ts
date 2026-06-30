@@ -1,10 +1,11 @@
 import type { AgentName, Config, ProviderName, SshMode } from '../core/types.js';
 import { saveConfig } from '../state/config.js';
 import { setSecret } from '../state/secrets.js';
-import { select, input, password, checkbox } from '@inquirer/prompts';
+import { select, input, password, checkbox, confirm } from '@inquirer/prompts';
 import { AGENT_NAMES, PROVIDER_NAMES } from '../core/types.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { readDoctlToken } from '../util/doctl.js';
 
 export interface InitAnswers {
   provider: ProviderName;
@@ -40,7 +41,22 @@ export async function runInit(): Promise<void> {
     message: 'Cloud provider',
     choices: PROVIDER_NAMES.map((p) => ({ value: p })),
   });
-  const token = await password({ message: `${provider} API token` });
+  let token: string;
+  if (provider === 'digitalocean') {
+    const foundToken = await readDoctlToken();
+    if (foundToken !== null) {
+      const useFound = await confirm({ message: 'Found a doctl token - use it?', default: true });
+      if (useFound) {
+        token = foundToken;
+      } else {
+        token = await password({ message: `${provider} API token` });
+      }
+    } else {
+      token = await password({ message: `${provider} API token` });
+    }
+  } else {
+    token = await password({ message: `${provider} API token` });
+  }
   const region = await input({ message: 'Default region', default: provider === 'hetzner' ? 'nbg1' : 'nyc1' });
   const size = await input({ message: 'Default server size', default: provider === 'hetzner' ? 'cx22' : 's-2vcpu-4gb' });
   const sshMode = await select({

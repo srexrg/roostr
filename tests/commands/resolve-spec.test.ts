@@ -25,4 +25,8 @@ describe('resolveBuildSpec', () => {
   it('throws ConfigError when the chosen provider has no token', () => {
     expect(() => resolveBuildSpec(config, { hasToken: false }, { name: 'box-3' })).toThrow(ConfigError);
   });
+  it('throws ConfigError for names with shell metacharacters', () => {
+    expect(() => resolveBuildSpec(config, { hasToken: true }, { name: 'box;reboot' })).toThrow(ConfigError);
+    expect(() => resolveBuildSpec(config, { hasToken: true }, { name: 'box$(x)' })).toThrow(ConfigError);
+  });
 });

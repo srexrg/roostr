@@ -9,6 +9,7 @@ import { probeTcp } from '../util/tcp.js';
 import { waitForReady } from '../provisioning/readiness.js';
 import { getAgentRecipe } from '../agents/index.js';
 import { readFile } from 'node:fs/promises';
+import { validateServerName } from '../util/validate.js';
 
 export interface UpFlags {
   name: string;
@@ -19,6 +20,7 @@ export interface UpFlags {
 }
 
 export function resolveBuildSpec(config: Config, ctx: { hasToken: boolean }, flags: UpFlags): BuildSpec {
+  validateServerName(flags.name);
   const provider = flags.provider ?? config.defaultProvider;
   if (!ctx.hasToken) {
     throw new ConfigError(`no API token for ${provider}`, 'run roostr init');
@@ -65,10 +67,14 @@ export async function runUp(flags: UpFlags): Promise<void> {
       probeTcp: (host, port) => probeTcp(host, port),
       sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
       now: () => Date.now(),
-    }, { probeHost }),
+    }, {
+      probeHost,
+      onProgress: (stage, ms) => process.stderr.write(`\r  ${stage}... ${Math.round(ms / 1000)}s   `),
+    }),
     now: () => new Date().toISOString(),
   });
 
+  process.stderr.write('\n');
   console.log(`\n  ${rec.name} is up`);
   if (spec.sshMode === 'tailscale') {
     console.log(`  Connect via roostr: roostr ssh ${spec.name}`);

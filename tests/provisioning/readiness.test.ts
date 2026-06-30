@@ -41,6 +41,24 @@ describe('waitForReady', () => {
     }, { intervalMs: 1000, timeoutMs: 5000 })).rejects.toThrow(/boot|running|never became/i);
   });
 
+  it('reports progress stages via onProgress', async () => {
+    const c = clock();
+    const stages: string[] = [];
+    const states = [
+      { id: '1', state: 'provisioning' as const, publicIp: null },
+      { id: '1', state: 'running' as const, publicIp: '203.0.113.7' },
+    ];
+    let probeOk = false;
+    await waitForReady('1', {
+      getServer: async () => states.shift() ?? { id: '1', state: 'running' as const, publicIp: '203.0.113.7' },
+      probeTcp: async () => { const r = probeOk; probeOk = true; return r; }, // closed once, then open
+      sleep: c.sleep, now: c.now,
+    }, { intervalMs: 1000, timeoutMs: 60000, onProgress: (s) => stages.push(s) });
+    expect(stages).toContain('provisioning');
+    expect(stages).toContain('booting');
+    expect(stages[stages.length - 1]).toBe('ready');
+  });
+
   it('probes opts.probeHost when provided (Tailscale mode)', async () => {
     const c = clock();
     let probed = '';

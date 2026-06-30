@@ -11,7 +11,13 @@ export interface ReadinessDeps {
 export async function waitForReady(
   serverId: string,
   deps: ReadinessDeps,
-  opts: { timeoutMs?: number; intervalMs?: number; port?: number; probeHost?: string } = {},
+  opts: {
+    timeoutMs?: number;
+    intervalMs?: number;
+    port?: number;
+    probeHost?: string;
+    onProgress?: (stage: string, elapsedMs: number) => void;
+  } = {},
 ): Promise<ProviderServer> {
   const timeoutMs = opts.timeoutMs ?? 300_000;
   const intervalMs = opts.intervalMs ?? 5_000;
@@ -20,11 +26,18 @@ export async function waitForReady(
   let everRunningWithIp = false;
 
   while (deps.now() - start < timeoutMs) {
+    const elapsed = deps.now() - start;
     const server = await deps.getServer(serverId);
     if (server && server.state === 'running' && server.publicIp) {
       everRunningWithIp = true;
       const host = opts.probeHost ?? server.publicIp;
-      if (await deps.probeTcp(host, port)) return server;
+      if (await deps.probeTcp(host, port)) {
+        opts.onProgress?.('ready', deps.now() - start);
+        return server;
+      }
+      opts.onProgress?.('booting', elapsed);
+    } else {
+      opts.onProgress?.('provisioning', elapsed);
     }
     await deps.sleep(intervalMs);
   }
