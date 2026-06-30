@@ -79,9 +79,9 @@ roostr up --name box --clone owner/repo     # clone a specific repo
 roostr up --name box --clone                # pick from your GitHub repos via local gh
 ```
 
-The clone runs on the box at boot (via cloud-init), so the repo is already there when you `roostr ssh`. It lands in `~/<repo-name>` (the part after the slash, e.g. `owner/roostr` lands in `~/roostr`).
+The clone runs from roostr over SSH once the box is reachable (the same way `--copy` works), so the repo is there by the time `up` finishes. It lands in `~/<repo-name>` (the part after the slash, e.g. `owner/roostr` lands in `~/roostr`). A clone failure is non-fatal - the box stays up and you get a warning.
 
-**Token caveat for private repos:** a private clone needs a GitHub token. roostr reads it from your local `gh` CLI (`gh auth token`) and injects it via cloud-init `user_data` - the same mechanism used for the Tailscale auth key and Claude Code token. The token is stored in droplet metadata and is readable from the box during boot. Prefer a **fine-grained PAT** scoped to just the target repo. After the clone completes, the token is stripped from the box's git remote so it is not persisted in `.git/config`.
+**Private repos:** a private clone needs a GitHub token; roostr reads it from your local `gh` CLI (`gh auth token`). The token is **never placed in cloud-init or droplet metadata** - it travels over the SSH session into a transient, command-scoped git credential helper, so it never appears in the clone URL, the process arguments, or `.git/config`. Prefer a **fine-grained PAT** scoped to just the target repo.
 
 ### Copy a local folder
 
@@ -144,7 +144,7 @@ Everything is provider-agnostic behind a single `Provider` interface - adding a 
 - cloud-init disables root login and SSH password auth. The `dev` user authenticates with your SSH public key only.
 - A droplet is recorded as `incomplete` the instant it exists - so a half-finished provision is never an untracked, silently-billing orphan.
 - **Tailscale ACL:** apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once in your Tailscale admin console. It scopes `tag:devbox` to accept SSH and Mosh from your own devices only, and the tag never appears as a `src` - a compromised box cannot pivot to the rest of your tailnet. Mint a `tag:devbox` auth key (single-use or ephemeral) to avoid reusable keys in droplet metadata.
-- **Caveat: secrets in cloud-init.** The Tailscale auth key, and the Claude Code setup-token if you provide one, are passed through cloud-init `user_data`, which the provider stores in droplet metadata and is readable from the box itself. For a single-user box on your own account this is low risk, but prefer a **single-use or ephemeral** Tailscale auth key, and note that logging into Claude interactively (`claude`) instead of supplying a token keeps the token off the box's metadata entirely.
+- **Minimal secrets in cloud-init.** The only secret that reaches the box through cloud-init `user_data` (and therefore droplet metadata) is the **Tailscale auth key**, and it is short-lived: with the recommended OAuth-client option roostr auto-mints a single-use, 30-minute, `tag:devbox` key per box. Everything else stays out of metadata - Claude Code defaults to interactive login on the box (the setup-token path is opt-in), and a private-repo clone sends its GitHub token over the SSH session, never through `user_data`. So even if metadata is read, the only thing there is a key that is single-use and already expired.
 
 ## Cost
 

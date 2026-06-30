@@ -12,7 +12,7 @@ import { getAgentRecipe } from '../agents/index.js';
 import { readFile } from 'node:fs/promises';
 import { validateServerName } from '../util/validate.js';
 import { githubToken, listGithubRepos } from '../util/github.js';
-import { cloneFragment } from '../provisioning/git-clone.js';
+import { cloneOverSsh } from '../provisioning/git-clone.js';
 import { syncLocal } from '../util/rsync.js';
 import { resolveSshTarget } from './ssh.js';
 import { basename } from 'node:path';
@@ -99,9 +99,7 @@ export async function runUp(flags: UpFlags): Promise<void> {
 
   const claudeOauthToken = (await getSecret('claude-code')) ?? undefined;
 
-  const extraFragments = spec.project.kind === 'clone'
-    ? [cloneFragment({ repo: spec.project.repo, username: 'dev', githubToken: githubToken() ?? undefined })]
-    : [];
+  const extraFragments: never[] = [];
 
   const rec = await up(spec, {
     provider: prov,
@@ -122,6 +120,18 @@ export async function runUp(flags: UpFlags): Promise<void> {
     }),
     now: () => new Date().toISOString(),
   });
+
+  // For clone mode: clone the repo over SSH after the box is up (non-fatal).
+  if (spec.project.kind === 'clone') {
+    const { user, host } = resolveSshTarget(rec);
+    const identityFile = spec.sshPublicKeyPath.replace(/\.pub$/, '');
+    try {
+      await cloneOverSsh({ repo: spec.project.repo, user, host, identityFile, token: githubToken() ?? undefined });
+      console.log('  cloned your repo onto the box');
+    } catch (e) {
+      console.error('  warning: ' + (e as Error).message);
+    }
+  }
 
   // For copy mode: rsync local folder after the box is up (non-fatal).
   if (spec.project.kind === 'copy') {

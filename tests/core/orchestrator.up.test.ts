@@ -78,7 +78,7 @@ describe('orchestrator.up', () => {
     expect(destroyed).toBe('fw-orphan');
   });
 
-  it('includes extraFragments (clone) in the cloud-init', async () => {
+  it('includes any provided extraFragments in the cloud-init', async () => {
     let userData = '';
     const provider = fakeProvider({ createServer: async (i: any) => { userData = i.userData; return { id: 'srv-1', state: 'provisioning', publicIp: null }; } });
     const deps = baseDeps(provider);

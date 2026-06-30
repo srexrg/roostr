@@ -40,12 +40,12 @@ account and tears it down just as fast.
 
 ### Agents
 
-- Claude Code installed at provision time, authenticated via token injection or interactive browser flow.
+- Claude Code installed at provision time. `roostr init` defaults to interactive login on the box (paste-code over SSH, no token in metadata); pasting a setup-token is an opt-in, clearly-labeled alternative.
 - Codex installed at provision time when selected in `roostr init`; authenticate by exporting `OPENAI_API_KEY` or running `codex login`.
 
 ### Project source
 
-- `roostr up --clone owner/repo` (or `--clone` to pick interactively) clones a GitHub repo onto the box at boot. Private repos read a token from your local `gh` CLI; the token is stripped from the box's git remote after clone.
+- `roostr up --clone owner/repo` (or `--clone` to pick interactively) clones a GitHub repo onto the box over SSH once it is reachable (not via cloud-init). For private repos the GitHub token from your local `gh` CLI travels over the SSH session into a transient credential helper - it never enters cloud-init/droplet metadata, the clone URL, or `.git/config`. A clone failure is non-fatal.
 - `roostr up --copy ./folder` rsyncs a local folder onto the box, respecting `.gitignore`. A copy failure is non-fatal.
 
 ### Pricing
@@ -67,3 +67,4 @@ account and tears it down just as fast.
 
 - Provider token read from your machine and used to call the provider API directly. Nothing phones home.
 - Secrets stored in a `0600` file (`secrets.json`), separate from `config.json` and never in your shell history; environment variables override.
+- Minimal cloud-init exposure: the only secret that reaches droplet metadata is the Tailscale auth key (single-use, 30-minute when auto-minted). Claude auth defaults to interactive on-box login, and private-repo clone tokens travel over SSH, so neither touches metadata.

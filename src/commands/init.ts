@@ -192,10 +192,19 @@ export async function runInit(): Promise<void> {
   });
   let claudeOauthToken: string | undefined;
   if (agents.includes('claude-code')) {
-    console.log('Optional: pre-authenticate Claude Code. Run `claude setup-token` on THIS machine and paste the token.');
-    console.log('(Leave blank to instead log in interactively on the box later. A pasted token is placed in the box\'s cloud-init metadata.)');
-    const t = await password({ message: 'Claude setup-token (optional)' });
-    claudeOauthToken = t || undefined;
+    const how = await select({
+      message: 'How should Claude Code authenticate on the box?',
+      choices: [
+        { value: 'interactive', name: 'Log in on the box (recommended)', description: 'run `claude` over SSH and do the paste-code login; no token in droplet metadata' },
+        { value: 'token',       name: 'Paste a setup-token now',         description: 'convenient, but the token is stored in the box cloud-init metadata' },
+      ],
+      default: 'interactive',
+    });
+    if (how === 'token') {
+      console.log('Run `claude setup-token` on THIS machine and paste the token.');
+      const t = await password({ message: 'Claude setup-token' });
+      claudeOauthToken = t || undefined;
+    }
   }
   const sshPublicKeyPath = await input({
     message: 'SSH public key path',
