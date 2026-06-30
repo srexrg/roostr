@@ -66,4 +66,4 @@ account and tears it down just as fast.
 ### Security and secrets
 
 - Provider token read from your machine and used to call the provider API directly. Nothing phones home.
-- Secrets stored in your OS keychain or a `0600` file, never in `config.json` and never in your shell history.
+- Secrets stored in a `0600` file (`secrets.json`), separate from `config.json` and never in your shell history; environment variables override.

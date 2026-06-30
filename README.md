@@ -14,6 +14,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the full, per-version feature list.
 
 **Roadmap:** Hetzner provider (the provider abstraction is already in place).
 
+**Supported today:** macOS, DigitalOcean, single-user. Linux likely works but is not yet tested end-to-end.
+
 > **Tailscale note:** Tailscale mode needs the [Tailscale](https://tailscale.com/download) app running on your device and signed in to the same tailnet as the box. Apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach. For the auth key, `roostr init` offers two ways: an **OAuth client** (recommended - roostr auto-mints a fresh, single-use, 30-minute `tag:devbox` key for each box, so nothing long-lived sits in droplet metadata), or **paste a `tag:devbox` key** you mint yourself. Connections use standard key-only OpenSSH over the tailnet (no Tailscale SSH daemon), and Mosh is installed for resilient sessions that survive Wi-Fi/cellular handoffs.
 
 ## Install
@@ -64,7 +66,7 @@ roostr destroy box-1 --yes        # delete it - stops billing
 roostr doctor                     # check prerequisites (add --fix to install what is missing)
 ```
 
-`init` stores your provider token in your OS keychain (or a `0600` file), never in `config.json` and never in your shell history.
+`init` stores your provider token in a `0600` file (`~/.config/roostr/secrets.json`), separate from `config.json` and never in your shell history. You can also supply secrets via environment variables, which take precedence.
 
 ## Project source
 
