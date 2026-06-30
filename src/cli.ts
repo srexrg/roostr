@@ -42,6 +42,18 @@ export function buildProgram(): Command {
     .option('--provider <provider>', 'digitalocean | hetzner')
     .action((opts) => import('./commands/sizes.js').then((m) => m.runSizes(opts.provider)));
 
+  program.command('mobile')
+    .description('Show a QR to connect from your phone; optionally authorize a phone SSH key')
+    .argument('<name>')
+    .option('--key <pubkey>', 'a phone SSH public key to authorize on the box')
+    .action((name, opts) => import('./commands/mobile.js').then((m) => m.runMobile(name, opts)));
+
+  program.command('doctor')
+    .description('Check prerequisites and configuration')
+    .action(() => import('./commands/doctor.js').then((m) => m.runDoctor()));
+
+  program.addHelpText('after', '\nQuickstart:\n  roostr init\n  roostr up --name box-1\n  roostr ssh box-1\n\nFirst time? run: roostr doctor\n');
+
   return program;
 }
 
