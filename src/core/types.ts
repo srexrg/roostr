@@ -37,6 +37,11 @@ export interface ServerRecord {
   firewallId?: string | null;  // provider firewall id created for this box (Plan 3)
 }
 
+export type ProjectSource =
+  | { kind: 'fresh' }
+  | { kind: 'clone'; repo: string }
+  | { kind: 'copy'; localPath: string };
+
 export interface BuildSpec {
   name: string;
   provider: ProviderName;
@@ -45,4 +50,5 @@ export interface BuildSpec {
   agents: AgentName[];
   sshMode: SshMode;
   sshPublicKeyPath: string;
+  project: ProjectSource;
 }

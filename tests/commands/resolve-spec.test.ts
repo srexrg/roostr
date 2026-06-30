@@ -15,6 +15,7 @@ describe('resolveBuildSpec', () => {
     expect(spec).toEqual({
       name: 'box-1', provider: 'digitalocean', region: 'nyc1', size: 's-2vcpu-4gb',
       agents: ['claude-code'], sshMode: 'direct', sshPublicKeyPath: '/k.pub',
+      project: { kind: 'fresh' },
     });
   });
   it('lets flags override config', () => {
@@ -28,5 +29,20 @@ describe('resolveBuildSpec', () => {
   it('throws ConfigError for names with shell metacharacters', () => {
     expect(() => resolveBuildSpec(config, { hasToken: true }, { name: 'box;reboot' })).toThrow(ConfigError);
     expect(() => resolveBuildSpec(config, { hasToken: true }, { name: 'box$(x)' })).toThrow(ConfigError);
+  });
+  it('defaults project to fresh', () => {
+    expect(resolveBuildSpec(config, { hasToken: true }, { name: 'box-1' }).project).toEqual({ kind: 'fresh' });
+  });
+  it('parses --clone owner/repo', () => {
+    const s = resolveBuildSpec(config, { hasToken: true }, { name: 'box-1', clone: 'srexrg/roostr' });
+    expect(s.project).toEqual({ kind: 'clone', repo: 'srexrg/roostr' });
+  });
+  it('parses --copy path', () => {
+    const s = resolveBuildSpec(config, { hasToken: true }, { name: 'box-1', copy: './app' });
+    expect(s.project).toEqual({ kind: 'copy', localPath: './app' });
+  });
+  it('rejects a bad repo and rejects clone+copy together', () => {
+    expect(() => resolveBuildSpec(config, { hasToken: true }, { name: 'box-1', clone: 'not-a-repo' })).toThrow(ConfigError);
+    expect(() => resolveBuildSpec(config, { hasToken: true }, { name: 'box-1', clone: 'a/b', copy: './x' })).toThrow(ConfigError);
   });
 });
