@@ -20,6 +20,8 @@ roostr is built in stages. What works **today**:
 - ✅ **Claude Code** installed on the box at provision time - authenticated via token injection or interactive browser flow
 - ✅ **Codex** installed on the box at provision time (select it in `roostr init`); authenticate by exporting `OPENAI_API_KEY`, or run `codex login` for a browser-based ChatGPT account flow
 - ✅ `roostr ssh` - drops you straight into a persistent `tmux` session on the box
+- ✅ **Mobile onboarding** - `roostr mobile <name>` prints a QR to connect from your phone and authorizes a phone-generated SSH key
+- ✅ `roostr doctor` - checks prerequisites and configuration before you provision
 - ✅ `roostr sizes` - lists live server sizes and prices for a provider, cheapest first
 - ✅ `roostr up` validates your requested size and region against the live catalog before creating anything, and errors early with a pointer to `roostr sizes` if the size does not exist or is not available in that region
 
@@ -31,7 +33,11 @@ On the roadmap:
 
 ## Install
 
-Not yet published to npm. For now, from source (requires [Bun](https://bun.sh)):
+```sh
+npm install -g roostr
+```
+
+Or from source (requires [Bun](https://bun.sh)):
 
 ```sh
 git clone git@github.com:srexrg/roostr.git
@@ -40,7 +46,14 @@ bun install
 bun link            # makes `roostr` available on your PATH
 ```
 
-(When published: `npm install -g roostr`.)
+### Publishing (maintainers)
+
+```sh
+npm pack --dry-run   # inspect the tarball: it should contain only dist/cli.js, README.md, LICENSE, package.json
+npm publish          # the prepack hook builds dist/ from source first
+```
+
+The published package ships the bundled `dist/cli.js` only; `src/`, `tests/`, and `docs/` are excluded via the `files` allowlist in `package.json`.
 
 ## Quickstart
 
@@ -49,8 +62,10 @@ roostr init                       # pick provider, paste token, set defaults
 roostr sizes                      # list available sizes and live prices, cheapest first
 roostr up --name box-1            # provision a hardened droplet (~2 min)
 roostr ssh box-1                  # drop into a persistent tmux session on the box
+roostr mobile box-1               # print a QR to connect from your phone
 roostr status                     # live state, public IP, live cost/mo from provider catalog
 roostr destroy box-1 --yes        # delete it - stops billing
+roostr doctor                     # check prerequisites and configuration
 ```
 
 `init` stores your provider token in your OS keychain (or a `0600` file), never in `config.json` and never in your shell history.
@@ -77,6 +92,33 @@ roostr up --name box --copy ./my-project    # rsync a local folder to the box
 ```
 
 The rsync runs after the box is reachable over the tailnet, and respects `.gitignore` (via `--filter=':- .gitignore'`). The folder lands in `~/<folder-name>` (its basename, e.g. `./my-project` lands in `~/my-project`). This is the first time roostr's controller connects to the box over SSH; a copy failure is **non-fatal** - the box is already up and usable. You will see a warning and the exact rsync command to run manually if it fails.
+
+## Connect from your phone
+
+Once a box is up, connect to it from your phone over the tailnet:
+
+```sh
+roostr mobile box-1                              # print a QR code to scan
+roostr mobile box-1 --key 'ssh-ed25519 AAAA...'  # also authorize a phone-generated key
+```
+
+`roostr mobile` does three things:
+
+- Prints a QR code encoding `ssh://dev@<host>`. Scan it with a mobile SSH client - [Termius](https://termius.com) or [Blink](https://blink.sh) on iOS, [Termux](https://termux.dev) on Android - to add the box.
+- If you pass `--key`, it authorizes that public key on the box (appended to the `dev` user's `~/.ssh/authorized_keys`). Generate the key on the phone in your SSH app, copy the **public** key, and paste it here. The key is validated before it is sent, and only ever the public half travels.
+- Writes a `~/.ssh/config` block for the box, so `ssh box-1` works from any terminal on your tailnet.
+
+Your phone must have the [Tailscale](https://tailscale.com/download) app installed and joined to the **same tailnet** as the box. The box has no public inbound ports - all connectivity is over Tailscale.
+
+`roostr up` reminds you of this with a `From your phone: roostr mobile <name>` hint in its success output. `roostr destroy` removes the `~/.ssh/config` block it created.
+
+## Troubleshooting
+
+```sh
+roostr doctor    # check prerequisites and configuration
+```
+
+`roostr doctor` verifies that the tools roostr leans on are present (`gh` for `--clone`, `tailscale` to connect, `rsync` for `--copy`), that you have an SSH key, and that a provider token is configured. Run it first if anything misbehaves; it prints `[OK]`, `[WARN]`, or `[ERR]` for each check with a hint on how to fix it.
 
 ## How it works
 
