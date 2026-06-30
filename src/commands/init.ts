@@ -2,10 +2,14 @@ import type { AgentName, Config, ProviderName, SshMode } from '../core/types.js'
 import { saveConfig } from '../state/config.js';
 import { setSecret } from '../state/secrets.js';
 import { select, input, password, checkbox, confirm } from '@inquirer/prompts';
-import { AGENT_NAMES, PROVIDER_NAMES } from '../core/types.js';
+import { AGENT_NAMES } from '../core/types.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { readDoctlToken } from '../util/doctl.js';
+import { runPreflight } from '../onboarding/preflight.js';
+import { buildPreflightDeps } from '../onboarding/preflight-deps.js';
 
 export interface InitAnswers {
   provider: ProviderName;
@@ -39,7 +43,10 @@ export async function persistInit(a: InitAnswers): Promise<void> {
 export async function runInit(): Promise<void> {
   const provider = await select({
     message: 'Cloud provider',
-    choices: PROVIDER_NAMES.map((p) => ({ value: p })),
+    choices: [
+      { value: 'digitalocean' as const, name: 'DigitalOcean', description: 'Fully supported - recommended for new users' },
+      { value: 'hetzner' as const, name: 'Hetzner', description: 'Not yet supported - coming soon' },
+    ],
   });
   let token: string;
   if (provider === 'digitalocean') {
@@ -57,17 +64,35 @@ export async function runInit(): Promise<void> {
   } else {
     token = await password({ message: `${provider} API token` });
   }
-  const region = await input({ message: 'Default region', default: provider === 'hetzner' ? 'nbg1' : 'nyc1' });
-  const size = await input({ message: 'Default server size', default: provider === 'hetzner' ? 'cx22' : 's-2vcpu-4gb' });
+  const region = await input({ message: 'Default region (run `roostr sizes` to see live options)', default: provider === 'hetzner' ? 'nbg1' : 'nyc1' });
+  const size = await input({ message: 'Default server size (run `roostr sizes` to see live options)', default: provider === 'hetzner' ? 'cx22' : 's-2vcpu-4gb' });
+  console.log('Connectivity: tailscale = zero public ports, reachable from any device; direct = public IP, key-only SSH.');
   const sshMode = await select({
     message: 'Connectivity mode',
-    choices: [{ value: 'tailscale' as const }, { value: 'direct' as const }],
+    choices: [
+      { value: 'tailscale' as const, name: 'tailscale', description: 'Recommended - no public ports, reach from your phone or laptop via Tailscale' },
+      { value: 'direct' as const, name: 'direct', description: 'Escape hatch - public IP with key-only SSH, no Tailscale required' },
+    ],
+    default: 'tailscale' as const,
   });
   let tailscaleAuthKey: string | undefined;
   if (sshMode === 'tailscale') {
     console.log('Create a Tailscale auth key at: https://login.tailscale.com/admin/settings/keys');
     tailscaleAuthKey = await password({ message: 'Tailscale auth key' });
+
+    // Optional: offer tailscale CLI if missing
+    const tailscaleMissing = spawnSync('which', ['tailscale']).status !== 0;
+    if (tailscaleMissing) {
+      const tsRecheck = (name: string) => spawnSync('which', [name]).status === 0;
+      const tsDeps = buildPreflightDeps('', tsRecheck);
+      await runPreflight(
+        [{ name: 'tailscale', status: 'warn', detail: 'tailscale CLI not found' }],
+        tsDeps,
+        [],
+      );
+    }
   }
+  console.log('Agents: you can pick both. claude-code is checked by default.');
   const agents = await checkbox({
     message: 'Agents to install',
     choices: AGENT_NAMES.map((a) => ({ value: a, checked: a === 'claude-code' })),
@@ -83,6 +108,38 @@ export async function runInit(): Promise<void> {
     message: 'SSH public key path',
     default: join(homedir(), '.ssh', 'id_ed25519.pub'),
   });
+
+  // SSH key preflight - required, but non-fatal: init saves even if key is absent
+  if (!existsSync(sshPublicKeyPath)) {
+    const recheck = (name: string) => {
+      if (name === 'ssh key') return existsSync(sshPublicKeyPath);
+      return spawnSync('which', [name]).status === 0;
+    };
+    const deps = buildPreflightDeps(sshPublicKeyPath, recheck);
+    const stillMissing = await runPreflight(
+      [{ name: 'ssh key', status: 'error', detail: `${sshPublicKeyPath} not found` }],
+      deps,
+      ['ssh key'],
+    );
+    if (stillMissing.length > 0) {
+      const privPath = sshPublicKeyPath.endsWith('.pub')
+        ? sshPublicKeyPath.slice(0, -4)
+        : sshPublicKeyPath;
+      console.log('Warning: SSH public key not found. roostr up will fail without it.');
+      console.log(`  Create one with: ssh-keygen -t ed25519 -f ${privPath} -N ""`);
+    }
+  }
+
   await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, agents, sshPublicKeyPath, claudeOauthToken });
-  console.log('Saved. Next: roostr up');
+  console.log(`Configured: provider=${provider}  mode=${sshMode}  agents=${agents.join(', ') || 'none'}`);
+
+  const provision = await confirm({ message: 'Provision your first box now?', default: false });
+  if (provision) {
+    const name = await input({ message: 'Box name', default: 'box-1' });
+    const { runUp } = await import('./up.js');
+    await runUp({ name });
+  } else {
+    console.log('Saved. When you are ready: roostr up --name <name>');
+    console.log('Hint: run roostr doctor to check your environment before provisioning.');
+  }
 }
