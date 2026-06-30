@@ -15,16 +15,18 @@ export interface CreateServerInput {
   image: string;
   sshKeyIds: string[];
   userData: string;
+  tags?: string[];
 }
 
 export interface FirewallInput {
   name: string;
-  serverId: string;
-  sshSourceCidr: string | null; // null = no inbound rules (Tailscale mode); a CIDR = tcp/22 rule (direct mode)
+  tag: string;                   // target droplets by tag (set at create - no open window)
+  sshSourceCidr: string | null;  // null = no inbound rules (Tailscale mode); a CIDR = tcp/22 rule (direct mode)
 }
 
 export interface Provider {
   ensureSshKey(name: string, publicKey: string): Promise<string>; // returns provider key id
+  ensureTag(name: string): Promise<void>;
   createServer(input: CreateServerInput): Promise<ProviderServer>;
   getServer(id: string): Promise<ProviderServer | null>;
   listServers(): Promise<ProviderServer[]>;

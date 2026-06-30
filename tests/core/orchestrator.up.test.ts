@@ -19,6 +19,7 @@ const spec: BuildSpec = {
 function fakeProvider(over: Partial<Provider> = {}): Provider {
   return {
     ensureSshKey: async () => 'key-1',
+    ensureTag: async () => {},
     createServer: async () => ({ id: 'srv-1', state: 'provisioning', publicIp: null }),
     getServer: async () => ({ id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }),
     listServers: async () => [],
@@ -50,7 +51,7 @@ describe('orchestrator.up', () => {
     expect(rec.publicIp).toBe('203.0.113.7');
     expect((await getServerRecord('box-1'))?.status).toBe('active');
     expect(firewallInput.sshSourceCidr).toBe('203.0.113.7/32');
-    expect(firewallInput.serverId).toBe('srv-1');
+    expect(firewallInput.tag).toBe('roostr-box-1');
   });
 
   it('leaves an incomplete record when readiness fails after create', async () => {
@@ -60,6 +61,17 @@ describe('orchestrator.up', () => {
     const rec = await getServerRecord('box-1');
     expect(rec?.status).toBe('incomplete');
     expect(rec?.providerServerId).toBe('srv-1'); // tracked, not orphaned
+  });
+
+  it('cleans up the firewall if droplet creation fails (no orphan)', async () => {
+    let destroyed = '';
+    const provider = fakeProvider({
+      ensureFirewall: async () => 'fw-orphan',
+      createServer: async () => { throw new Error('boom'); },
+      destroyFirewall: async (id) => { destroyed = id; },
+    });
+    await expect(up(spec, baseDeps(provider))).rejects.toThrow('boom');
+    expect(destroyed).toBe('fw-orphan');
   });
 
   it('tailscale mode: closed firewall, records firewallId + tailscaleName, probes hostname', async () => {

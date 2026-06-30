@@ -21,7 +21,7 @@ function rec(name: string): ServerRecord {
 }
 function fakeProvider(over: Partial<Provider> = {}): Provider {
   return {
-    ensureSshKey: async () => 'k', createServer: async () => ({ id: 'srv-1', state: 'running', publicIp: null }),
+    ensureSshKey: async () => 'k', ensureTag: async () => {}, createServer: async () => ({ id: 'srv-1', state: 'running', publicIp: null }),
     getServer: async () => ({ id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }),
     listServers: async () => [], destroyServer: async () => {}, ensureFirewall: async () => 'fw',
     destroyFirewall: async () => {},

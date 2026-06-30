@@ -32,10 +32,21 @@ export async function up(spec: BuildSpec, deps: UpDeps): Promise<ServerRecord> {
   ];
   const userData = buildCloudInit({ username: 'dev', sshPublicKey: publicKey, fragments });
 
-  const created = await deps.provider.createServer({
-    name: spec.name, region: spec.region, size: spec.size, image: DO_IMAGE,
-    sshKeyIds: [keyId], userData,
-  });
+  const tag = `roostr-${spec.name}`;
+  await deps.provider.ensureTag(tag);
+  const sshSourceCidr = isTailscale ? null : `${await deps.detectPublicIp()}/32`;
+  const firewallId = await deps.provider.ensureFirewall({ name: `${spec.name}-fw`, tag, sshSourceCidr });
+
+  let created;
+  try {
+    created = await deps.provider.createServer({
+      name: spec.name, region: spec.region, size: spec.size, image: DO_IMAGE,
+      sshKeyIds: [keyId], userData, tags: [tag],
+    });
+  } catch (err) {
+    try { await deps.provider.destroyFirewall(firewallId); } catch { /* best-effort orphan cleanup */ }
+    throw err;
+  }
 
   // Track the box the instant it exists, BEFORE anything else can fail.
   const record: ServerRecord = {
@@ -43,14 +54,9 @@ export async function up(spec: BuildSpec, deps: UpDeps): Promise<ServerRecord> {
     region: spec.region, size: spec.size, sshMode: spec.sshMode,
     tailscaleName: isTailscale ? spec.name : null, publicIp: created.publicIp, agents: spec.agents,
     createdAt: deps.now(), lastSetupAt: null, status: 'incomplete',
-    snapshotId: null, hibernatedAt: null, firewallId: null,
+    snapshotId: null, hibernatedAt: null, firewallId,
   };
   await upsertServer(record);
-
-  const sshSourceCidr = isTailscale ? null : `${await deps.detectPublicIp()}/32`;
-  const firewallId = await deps.provider.ensureFirewall({ name: `${spec.name}-fw`, serverId: created.id, sshSourceCidr });
-  record.firewallId = firewallId;
-  await upsertServer(record); // persist firewall id before readiness can throw
 
   const ready = await deps.waitForReady(created.id, created, isTailscale ? spec.name : undefined);
   const finalRecord: ServerRecord = { ...record, status: 'active', publicIp: ready.publicIp, lastSetupAt: deps.now() };

@@ -15,13 +15,14 @@ describe('DigitalOceanProvider.ensureFirewall', () => {
   it('creates a deny-all-but-ssh firewall scoped to the source IP and returns its id', async () => {
     const { impl, calls } = fakeFetch([{ status: 202, body: { firewall: { id: 'fw-abc', status: 'waiting' } } }]);
     const p = new DigitalOceanProvider('tok', impl);
-    const id = await p.ensureFirewall({ name: 'box-1-fw', serverId: '3164444', sshSourceCidr: '203.0.113.7/32' });
+    const id = await p.ensureFirewall({ name: 'box-1-fw', tag: 'roostr-box-1', sshSourceCidr: '203.0.113.7/32' });
     expect(id).toBe('fw-abc');
     expect(calls[0].method).toBe('POST');
     expect(calls[0].url).toBe('https://api.digitalocean.com/v2/firewalls');
     const body = calls[0].body;
     expect(body.name).toBe('box-1-fw');
-    expect(body.droplet_ids).toEqual([3164444]);
+    expect(body.tags).toEqual(['roostr-box-1']);
+    expect(body.droplet_ids).toEqual([]);
     expect(body.inbound_rules).toEqual([
       { protocol: 'tcp', ports: '22', sources: { addresses: ['203.0.113.7/32'] } },
     ]);

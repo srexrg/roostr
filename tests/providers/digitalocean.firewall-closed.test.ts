@@ -15,7 +15,7 @@ describe('DigitalOcean firewall - Tailscale (closed) mode', () => {
   it('creates a firewall with NO inbound rules when sshSourceCidr is null', async () => {
     const { impl, calls } = fakeFetch([{ status: 202, body: { firewall: { id: 'fw-1' } } }]);
     const p = new DigitalOceanProvider('tok', impl);
-    await p.ensureFirewall({ name: 'box-1-fw', serverId: '1', sshSourceCidr: null });
+    await p.ensureFirewall({ name: 'box-1-fw', tag: 'roostr-box-1', sshSourceCidr: null });
     expect(calls[0].body.inbound_rules).toEqual([]);
     expect(calls[0].body.outbound_rules.length).toBeGreaterThanOrEqual(3);
   });

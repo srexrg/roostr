@@ -52,7 +52,7 @@ export class DigitalOceanProvider implements Provider {
   }
 
   async createServer(input: CreateServerInput): Promise<ProviderServer> {
-    const body = {
+    const body: Record<string, unknown> = {
       name: input.name,
       region: input.region,
       size: input.size,
@@ -60,6 +60,7 @@ export class DigitalOceanProvider implements Provider {
       ssh_keys: input.sshKeyIds.map((k) => (/^\d+$/.test(k) ? Number(k) : k)),
       user_data: input.userData,
     };
+    if (input.tags && input.tags.length) body.tags = input.tags;
     const data = await this.request<{ droplet: Droplet }>('POST', '/droplets', body);
     return this.toServer(data.droplet);
   }
@@ -83,7 +84,16 @@ export class DigitalOceanProvider implements Provider {
     await this.request<void>('DELETE', `/droplets/${id}`);
   }
 
-  // ensureSshKey + ensureFirewall implemented in Tasks 2 and 3.
+  // ensureSshKey + ensureTag + ensureFirewall implemented in Tasks 2-5.
+  async ensureTag(name: string): Promise<void> {
+    try {
+      await this.request<void>('POST', '/tags', { name });
+    } catch (err) {
+      if (err instanceof ProviderHttpError && err.status === 422) return; // already exists
+      throw err;
+    }
+  }
+
   async ensureSshKey(name: string, publicKey: string): Promise<string> {
     const target = publicKey.trim();
     const data = await this.request<{ ssh_keys: SshKey[] }>('GET', '/account/keys?per_page=200');
@@ -99,7 +109,8 @@ export class DigitalOceanProvider implements Provider {
       : [];
     const body = {
       name: input.name,
-      droplet_ids: [Number(input.serverId)],
+      tags: [input.tag],
+      droplet_ids: [],
       inbound_rules,
       outbound_rules: [
         { protocol: 'tcp', ports: 'all', destinations: anywhere },
