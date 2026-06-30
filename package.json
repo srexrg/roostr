@@ -5,22 +5,32 @@
   "type": "module",
   "license": "MIT",
   "author": "srexrg",
-  "repository": { "type": "git", "url": "git+https://github.com/srexrg/roostr.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srexrg/roostr.git"
+  },
   "homepage": "https://github.com/srexrg/roostr#readme",
-  "bugs": { "url": "https://github.com/srexrg/roostr/issues" },
+  "bugs": {
+    "url": "https://github.com/srexrg/roostr/issues"
+  },
   "keywords": ["vps", "cli", "claude-code", "codex", "agents", "digitalocean", "provisioning", "devbox"],
   "files": ["dist", "README.md", "LICENSE"],
-  "bin": { "roostr": "dist/cli.js" },
-  "engines": { "node": ">=20" },
+  "bin": {
+    "roostr": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "bun test",
     "build": "bun build ./src/cli.ts --target node --outdir dist",
     "dev": "bun run src/cli.ts"
   },
   "dependencies": {
-    "commander": "^15.0.0",
     "@inquirer/prompts": "^8.5.2",
-    "proper-lockfile": "^4.1.2"
+    "commander": "^15.0.0",
+    "proper-lockfile": "^4.1.2",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'bun:test';
+import { parse } from 'yaml';
 import { buildCloudInit, SENTINEL_PATH } from '../../src/provisioning/cloud-init.js';
 import { tailscaleFragment } from '../../src/provisioning/tailscale.js';
 import { claudeCodeRecipe } from '../../src/agents/claude-code.js';
@@ -11,10 +12,13 @@ describe('buildCloudInit', () => {
   it('starts with the cloud-config header', () => {
     expect(out.startsWith('#cloud-config')).toBe(true);
   });
-  it('creates the user with the authorized key and sudo', () => {
+  it('creates the user with the authorized key', () => {
     expect(out).toContain('name: dev');
     expect(out).toContain(KEY);
-    expect(out).toContain('sudo: ALL=(ALL) NOPASSWD:ALL');
+  });
+  it('does not grant the dev user sudo', () => {
+    expect(out).not.toContain('NOPASSWD');
+    expect(out).not.toContain('groups: sudo');
   });
   it('hardens ssh (no root, no password auth)', () => {
     expect(out).toContain('disable_root: true');
@@ -46,5 +50,14 @@ describe('buildCloudInit composition', () => {
     const claudeIdx = out.indexOf('claude.ai/install.sh');
     expect(sentinelIdx).toBeGreaterThan(tsIdx);
     expect(sentinelIdx).toBeGreaterThan(claudeIdx);
+  });
+
+  it('safely encodes a multi-line runcmd entry (no YAML break)', () => {
+    const out = buildCloudInit({
+      username: 'dev', sshPublicKey: 'ssh-ed25519 AAA k',
+      fragments: [{ runcmd: ['echo one\necho two'] }],
+    });
+    // the whole document must still parse as YAML
+    expect(() => parse(out.replace(/^#cloud-config\n/, ''))).not.toThrow();
   });
 });
