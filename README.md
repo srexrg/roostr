@@ -26,8 +26,8 @@ roostr is **a tool, not a middleman.** It runs entirely on your machine, uses *y
 ## Install
 
 ```sh
-npm install -g roostr
-roostr doctor      # confirm prerequisites are in place
+npm install -g roostr      # or: bun add -g roostr / pnpm add -g roostr / yarn global add roostr
+roostr doctor              # confirm prerequisites are in place
 ```
 
 Or from source (requires [Bun](https://bun.sh)):
