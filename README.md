@@ -43,15 +43,25 @@ The published package ships the bundled `dist/cli.js` only; `src/`, `tests/`, an
 
 ## Quickstart
 
+New here? You really only need one command:
+
 ```sh
-roostr init                       # pick provider, paste token, set defaults
+roostr init
+```
+
+`roostr init` is the guided entry point. It checks your prerequisites and offers to install anything missing (with your confirmation - it generates an SSH key for you, and installs tools like `gh` via Homebrew on macOS), walks you through provider, token, connectivity mode, and agents with a sane default at each step, and at the end offers to provision your first box. Answer the prompts and you finish with a running, reachable machine.
+
+The individual commands, if you want them:
+
+```sh
+roostr init                       # guided setup (prerequisites, config, optional first box)
 roostr sizes                      # list available sizes and live prices, cheapest first
 roostr up --name box-1            # provision a hardened droplet (~2 min)
 roostr ssh box-1                  # drop into a persistent tmux session on the box
 roostr mobile box-1               # print a QR to connect from your phone
 roostr status                     # live state, public IP, live cost/mo from provider catalog
 roostr destroy box-1 --yes        # delete it - stops billing
-roostr doctor                     # check prerequisites and configuration
+roostr doctor                     # check prerequisites (add --fix to install what is missing)
 ```
 
 `init` stores your provider token in your OS keychain (or a `0600` file), never in `config.json` and never in your shell history.
@@ -101,10 +111,13 @@ Your phone must have the [Tailscale](https://tailscale.com/download) app install
 ## Troubleshooting
 
 ```sh
-roostr doctor    # check prerequisites and configuration
+roostr doctor          # check prerequisites and configuration
+roostr doctor --fix    # offer to install whatever is missing
 ```
 
 `roostr doctor` verifies that the tools roostr leans on are present (`gh` for `--clone`, `tailscale` to connect, `rsync` for `--copy`), that you have an SSH key, and that a provider token is configured. Run it first if anything misbehaves; it prints `[OK]`, `[WARN]`, or `[ERR]` for each check with a hint on how to fix it.
+
+Add `--fix` and roostr offers to resolve each problem for you: it can generate an SSH key with `ssh-keygen`, and on macOS run the Homebrew install for a missing tool - always showing the exact command and asking before it runs anything. On Linux it prints the command for you to run yourself. The same preflight runs automatically at the start of `roostr init`.
 
 ## How it works
 

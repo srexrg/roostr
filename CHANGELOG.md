@@ -10,6 +10,11 @@ First feature-complete cut, in private testing. Not yet published to the npm
 registry. roostr provisions a hardened, agent-ready VPS on your own cloud
 account and tears it down just as fast.
 
+### Onboarding
+
+- `roostr init` is now a guided first-run flow: it runs a prerequisite preflight, explains each choice with a sensible default, and offers to provision your first box at the end - so a new user can go from install to a running box with one command.
+- `roostr doctor --fix` offers to resolve missing prerequisites with your confirmation: it generates an SSH key with `ssh-keygen`, and on macOS runs the Homebrew install for a missing tool. The exact command is always shown, nothing runs without a yes, and on Linux the command is printed for you to run. Manual installs (`sudo`, `curl | sh`) are never auto-run.
+
 ### Provisioning
 
 - DigitalOcean provider: `roostr up` / `roostr status` / `roostr destroy`.
