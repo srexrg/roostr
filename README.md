@@ -52,6 +52,29 @@ roostr destroy box-1 --yes        # delete it - stops billing
 
 `init` stores your provider token in your OS keychain (or a `0600` file), never in `config.json` and never in your shell history.
 
+## Project source
+
+By default `roostr up` creates a fresh, empty box. You can optionally land a project on the box in two ways:
+
+### Clone a GitHub repo
+
+```sh
+roostr up --name box --clone owner/repo     # clone a specific repo
+roostr up --name box --clone                # pick from your GitHub repos via local gh
+```
+
+The clone runs on the box at boot (via cloud-init), so the repo is already there when you `roostr ssh`. It lands in `~/<repo-name>` (the part after the slash, e.g. `owner/roostr` lands in `~/roostr`).
+
+**Token caveat for private repos:** a private clone needs a GitHub token. roostr reads it from your local `gh` CLI (`gh auth token`) and injects it via cloud-init `user_data` - the same mechanism used for the Tailscale auth key and Claude Code token. The token is stored in droplet metadata and is readable from the box during boot. Prefer a **fine-grained PAT** scoped to just the target repo. After the clone completes, the token is stripped from the box's git remote so it is not persisted in `.git/config`.
+
+### Copy a local folder
+
+```sh
+roostr up --name box --copy ./my-project    # rsync a local folder to the box
+```
+
+The rsync runs after the box is reachable over the tailnet, and respects `.gitignore` (via `--filter=':- .gitignore'`). The folder lands in `~/<folder-name>` (its basename, e.g. `./my-project` lands in `~/my-project`). This is the first time roostr's controller connects to the box over SSH; a copy failure is **non-fatal** - the box is already up and usable. You will see a warning and the exact rsync command to run manually if it fails.
+
 ## How it works
 
 ```
