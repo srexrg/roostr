@@ -6,54 +6,40 @@
 
 It is **a tool, not a middleman.** It runs entirely on your machine, uses *your* cloud provider token and *your* agent subscription, and never routes anything through infrastructure operated by anyone else. You bring the provider; roostr does the tedious, error-prone setup.
 
-## Status
+## What it does
 
-roostr is built in stages. What works **today**:
+Provision and tear down a hardened **DigitalOcean** box (`up` / `status` / `destroy`), reachable over **Tailscale** with zero public inbound ports, with **Claude Code** and **Codex** installed at provision time. Plus live pricing (`roostr sizes`), phone onboarding (`roostr mobile`), and a preflight check (`roostr doctor`). Boxes are hardened by default - non-root `dev` user with no sudo, key-only OpenSSH, firewall created before the droplet, on-box `ufw`.
 
-- ✅ **DigitalOcean** provisioning - `up` / `status` / `destroy`
-- ✅ Hardened boxes - non-root `dev` user (no sudo), root + password SSH disabled, key-only OpenSSH, swap
-- ✅ Firewall created before the droplet - no open-port window even during boot; plus an on-box **ufw** layer scoped to the Tailscale interface
-- ✅ Readiness polling - `up` returns only once the box is actually reachable
-- ✅ Reconciled `status` with drift detection + **live monthly cost** fetched from the provider catalog (not a static estimate)
-- ✅ Secrets kept out of config and off your shell history
-- ✅ **Tailscale** connectivity - zero public inbound ports; reach your box over the tailnet with `roostr ssh <name>` or `ssh dev@<name>` (standard key-only OpenSSH, no Tailscale SSH daemon)
-- ✅ **Claude Code** installed on the box at provision time - authenticated via token injection or interactive browser flow
-- ✅ **Codex** installed on the box at provision time (select it in `roostr init`); authenticate by exporting `OPENAI_API_KEY`, or run `codex login` for a browser-based ChatGPT account flow
-- ✅ `roostr ssh` - drops you straight into a persistent `tmux` session on the box
-- ✅ **Mobile onboarding** - `roostr mobile <name>` prints a QR to connect from your phone and authorizes a phone-generated SSH key
-- ✅ `roostr doctor` - checks prerequisites and configuration before you provision
-- ✅ `roostr sizes` - lists live server sizes and prices for a provider, cheapest first
-- ✅ `roostr up` validates your requested size and region against the live catalog before creating anything, and errors early with a pointer to `roostr sizes` if the size does not exist or is not available in that region
+See [CHANGELOG.md](CHANGELOG.md) for the full, per-version feature list.
 
-**Note:** Tailscale mode requires the Tailscale app running on your device (phone or laptop) to connect. Install from [tailscale.com/download](https://tailscale.com/download) and sign in to the same tailnet as your server. Mint a `tag:devbox` auth key in the Tailscale admin console and apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach.
+**Roadmap:** Hetzner provider (the provider abstraction is already in place).
 
-On the roadmap:
-
-- ⏳ **Hetzner** provider (the abstraction is already in place)
+> **Tailscale note:** Tailscale mode needs the [Tailscale](https://tailscale.com/download) app running on your device and signed in to the same tailnet as the box. Mint a `tag:devbox` auth key in the admin console and apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach.
 
 ## Install
 
-```sh
-npm install -g roostr
-```
-
-Or from source (requires [Bun](https://bun.sh)):
+roostr is not yet on the npm registry. Install from source - it only requires [Bun](https://bun.sh):
 
 ```sh
 git clone git@github.com:srexrg/roostr.git
 cd roostr
-bun install
+bun install         # also builds the binary (prepare hook)
+bun run build       # belt-and-suspenders: ensure dist/cli.js exists
 bun link            # makes `roostr` available on your PATH
+
+roostr doctor       # confirm prerequisites are in place
 ```
+
+(Once published, this becomes `npm install -g roostr`.)
 
 ### Publishing (maintainers)
 
 ```sh
-npm pack --dry-run   # inspect the tarball: it should contain only dist/cli.js, README.md, LICENSE, package.json
+npm pack --dry-run   # inspect the tarball: dist/cli.js, README.md, CHANGELOG.md, LICENSE, package.json
 npm publish          # the prepack hook builds dist/ from source first
 ```
 
-The published package ships the bundled `dist/cli.js` only; `src/`, `tests/`, and `docs/` are excluded via the `files` allowlist in `package.json`.
+The published package ships the bundled `dist/cli.js` only; `src/`, `tests/`, and internal `docs/` never enter the tarball (enforced by the `files` allowlist in `package.json`).
 
 ## Quickstart
 

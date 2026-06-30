@@ -5,6 +5,5 @@ secrets.json
 *.log
 .DS_Store
 
-# local-only docs (kept out of git per request)
+# internal dev artifacts (plans, specs) - kept local only
 docs/
-CHANGELOG.md

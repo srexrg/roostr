@@ -14,7 +14,7 @@
     "url": "https://github.com/srexrg/roostr/issues"
   },
   "keywords": ["vps", "cli", "claude-code", "codex", "agents", "digitalocean", "provisioning", "devbox"],
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
   "bin": {
     "roostr": "dist/cli.js"
   },
@@ -25,6 +25,7 @@
     "test": "bun test",
     "build": "bun build ./src/cli.ts --target node --outdir dist",
     "dev": "bun run src/cli.ts",
+    "prepare": "bun build ./src/cli.ts --target node --outdir dist",
     "prepack": "bun build ./src/cli.ts --target node --outdir dist",
     "prepublishOnly": "bun test"
   },
