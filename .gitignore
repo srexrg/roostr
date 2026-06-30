@@ -3,6 +3,7 @@ dist/
 .env
 secrets.json
 *.log
+*.tgz
 .DS_Store
 
 # internal dev artifacts (plans, specs) - kept local only
