@@ -25,6 +25,8 @@ function fakeProvider(over: Partial<Provider> = {}): Provider {
     getServer: async () => ({ id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }),
     listServers: async () => [], destroyServer: async () => {}, ensureFirewall: async () => 'fw',
     destroyFirewall: async () => {},
+    listSizes: async () => ([{ slug: 's-2vcpu-4gb', vcpus: 2, memoryGB: 4, diskGB: 80, priceMonthly: 24, currency: 'USD', arch: 'unknown', regions: ['nyc1'] }]),
+    listRegions: async () => [],
     ...over,
   };
 }
@@ -55,7 +57,8 @@ describe('orchestrator.status', () => {
     await upsertServer(rec('box-1'));
     const views = await status({ provider: fakeProvider() }, 'box-1');
     expect(views[0].liveState).toBe('running');
-    expect(views[0].monthlyCostUsd).toBe(24);
+    expect(views[0].monthlyCost).toBe(24);
+    expect(views[0].currency).toBe('USD');
   });
   it('marks a vanished server as gone (drift)', async () => {
     await upsertServer(rec('box-1'));

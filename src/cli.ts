@@ -37,6 +37,11 @@ export function buildProgram(): Command {
     .argument('[name]', 'optional server name')
     .action((name) => import('./commands/ssh.js').then((m) => m.runSsh(name)));
 
+  program.command('sizes')
+    .description('List live server sizes and prices')
+    .option('--provider <provider>', 'digitalocean | hetzner')
+    .action((opts) => import('./commands/sizes.js').then((m) => m.runSizes(opts.provider)));
+
   return program;
 }
 

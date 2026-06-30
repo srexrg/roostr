@@ -1,10 +1,10 @@
-import type { BuildSpec, ServerRecord, ProviderName } from './types.js';
+import type { BuildSpec, ServerRecord } from './types.js';
 import type { Provider, ProviderServer, ServerState } from '../providers/provider.js';
 import { upsertServer, listServers, getServerRecord, removeServer } from '../state/store.js';
 import { buildCloudInit } from '../provisioning/cloud-init.js';
 import { tailscaleFragment } from '../provisioning/tailscale.js';
 import { ProviderError } from './errors.js';
-import { monthlyCostUsd } from '../providers/pricing.js';
+import { priceFromCatalog } from '../providers/pricing.js';
 
 const DO_IMAGE = 'ubuntu-24-04-x64';
 
@@ -85,21 +85,25 @@ export interface StatusView {
   recordedStatus: string;
   liveState: ServerState | 'gone';
   publicIp: string | null;
-  monthlyCostUsd: number | null;
+  monthlyCost: number | null;
+  currency: string | null;
 }
 
 export async function status(deps: { provider: Provider }, name?: string): Promise<StatusView[]> {
   const all = await listServers();
   const records = name ? all.filter((r) => r.name === name) : all;
+  const sizes = await deps.provider.listSizes().catch(() => [] as Awaited<ReturnType<Provider['listSizes']>>);
   const views: StatusView[] = [];
   for (const r of records) {
     const live = await deps.provider.getServer(r.providerServerId);
+    const price = priceFromCatalog(sizes, r.size);
     views.push({
       name: r.name, provider: r.provider, region: r.region, size: r.size,
       recordedStatus: r.status,
       liveState: live ? live.state : 'gone',
       publicIp: live?.publicIp ?? r.publicIp,
-      monthlyCostUsd: monthlyCostUsd(r.provider as ProviderName, r.size),
+      monthlyCost: price?.price ?? null,
+      currency: price?.currency ?? null,
     });
   }
   return views;

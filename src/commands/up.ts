@@ -1,5 +1,6 @@
 import type { BuildSpec, Config, ProviderName, AgentName, ProjectSource } from '../core/types.js';
 import { ConfigError } from '../core/errors.js';
+import type { CloudSize } from '../providers/provider.js';
 import { requireConfig } from '../state/config.js';
 import { getSecret } from '../state/secrets.js';
 import { getProvider } from '../providers/index.js';
@@ -15,6 +16,15 @@ import { cloneFragment } from '../provisioning/git-clone.js';
 import { syncLocal } from '../util/rsync.js';
 import { resolveSshTarget } from './ssh.js';
 import { basename } from 'node:path';
+
+export function validateSizeRegion(sizes: CloudSize[], size: string, region: string): void {
+  if (sizes.length === 0) return; // best-effort: catalog unavailable
+  const match = sizes.find((s) => s.slug === size);
+  if (!match) throw new ConfigError(`size ${size} not found`, 'run roostr sizes to list valid sizes');
+  if (match.regions.length && !match.regions.includes(region)) {
+    throw new ConfigError(`size ${size} is not available in ${region}`, 'run roostr sizes');
+  }
+}
 
 export interface UpFlags {
   name: string;
@@ -71,6 +81,9 @@ export async function runUp(flags: UpFlags): Promise<void> {
   const token = await getSecret(provider);
   const spec = resolveBuildSpec(config, { hasToken: !!token }, flags);
   const prov = getProvider(provider, { token: token! });
+
+  const sizes = await prov.listSizes().catch(() => [] as CloudSize[]);
+  validateSizeRegion(sizes, spec.size, spec.region);
 
   const agentRecipes = spec.agents.map(getAgentRecipe);
 

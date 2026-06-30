@@ -27,6 +27,8 @@ function fakeProvider(over: Partial<Provider> = {}): Provider {
     destroyServer: async () => {},
     ensureFirewall: async () => 'fw-1',
     destroyFirewall: async () => {},
+    listSizes: async () => [],
+    listRegions: async () => [],
     ...over,
   };
 }

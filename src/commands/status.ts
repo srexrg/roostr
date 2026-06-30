@@ -10,7 +10,7 @@ export async function runStatus(name?: string): Promise<void> {
   const views = await status({ provider: prov }, name);
   if (views.length === 0) { console.log('No servers. Run: roostr up'); return; }
   for (const v of views) {
-    const cost = v.monthlyCostUsd === null ? 'unknown' : `~$${v.monthlyCostUsd}/mo (est)`;
+    const cost = v.monthlyCost === null ? 'unknown' : `~${v.monthlyCost} ${v.currency}/mo (live)`;
     console.log(`${v.name}  [${v.provider} ${v.size} ${v.region}]  live=${v.liveState}  ip=${v.publicIp ?? '-'}  ${cost}`);
     if (v.liveState === 'gone') console.log('   (drifted: not found on provider - consider roostr destroy to prune)');
     else if (v.publicIp) console.log(`   ssh dev@${v.publicIp}  &&  tmux attach`);
