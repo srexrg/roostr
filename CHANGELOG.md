@@ -13,6 +13,7 @@ account and tears it down just as fast.
 ### Onboarding
 
 - `roostr init` is now a guided first-run flow: it runs a prerequisite preflight, explains each choice with a sensible default, and offers to provision your first box at the end - so a new user can go from install to a running box with one command.
+- `roostr init` picks region and size from the live provider catalog: region first, then the sizes available there, cheapest first, with specs and price shown inline and a "show all (type to filter)" option. If the catalog cannot load (offline, or a provider without one), it falls back to free-text entry so setup never blocks.
 - `roostr doctor --fix` offers to resolve missing prerequisites with your confirmation: it generates an SSH key with `ssh-keygen`, and on macOS runs the Homebrew install for a missing tool. The exact command is always shown, nothing runs without a yes, and on Linux the command is printed for you to run. Manual installs (`sudo`, `curl | sh`) are never auto-run.
 
 ### Provisioning

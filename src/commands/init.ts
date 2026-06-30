@@ -1,7 +1,7 @@
 import type { AgentName, Config, ProviderName, SshMode } from '../core/types.js';
 import { saveConfig } from '../state/config.js';
 import { setSecret } from '../state/secrets.js';
-import { select, input, password, checkbox, confirm } from '@inquirer/prompts';
+import { select, input, password, checkbox, confirm, search } from '@inquirer/prompts';
 import { AGENT_NAMES } from '../core/types.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +10,9 @@ import { spawnSync } from 'node:child_process';
 import { readDoctlToken } from '../util/doctl.js';
 import { runPreflight } from '../onboarding/preflight.js';
 import { buildPreflightDeps } from '../onboarding/preflight-deps.js';
+import { getProvider } from '../providers/index.js';
+import type { CloudSize, CloudRegion } from '../providers/provider.js';
+import { regionChoices, sizeChoices } from '../onboarding/catalog-select.js';
 
 export interface InitAnswers {
   provider: ProviderName;
@@ -64,8 +67,44 @@ export async function runInit(): Promise<void> {
   } else {
     token = await password({ message: `${provider} API token` });
   }
-  const region = await input({ message: 'Default region (run `roostr sizes` to see live options)', default: provider === 'hetzner' ? 'nbg1' : 'nyc1' });
-  const size = await input({ message: 'Default server size (run `roostr sizes` to see live options)', default: provider === 'hetzner' ? 'cx22' : 's-2vcpu-4gb' });
+  // Fetch the live catalog (try/catch wraps ONLY the network call so a prompt
+  // cancellation below is never swallowed). Null => fall back to manual entry.
+  let catalog: { regions: CloudRegion[]; sizes: CloudSize[] } | null = null;
+  try {
+    const prov = getProvider(provider, { token });
+    const [regions, sizes] = await Promise.all([prov.listRegions(), prov.listSizes()]);
+    if (regions.length > 0 && sizes.length > 0) catalog = { regions, sizes };
+  } catch {
+    catalog = null;
+  }
+
+  let region: string;
+  let size: string;
+  if (catalog) {
+    region = await select({ message: 'Region', choices: regionChoices(catalog.regions) });
+    const curated = sizeChoices(catalog.sizes, region);
+    const SHOW_ALL = '__show_all__';
+    const sizePick = await select({
+      message: 'Server size (cheapest first)',
+      choices: [...curated, { value: SHOW_ALL, name: 'Show all sizes (type to filter)' }],
+    });
+    if (sizePick === SHOW_ALL) {
+      const all = sizeChoices(catalog.sizes, region, { all: true });
+      size = await search({
+        message: 'Server size (type to filter)',
+        source: async (term?: string) =>
+          all.filter((c) => !term || c.name.toLowerCase().includes(term.toLowerCase())),
+      });
+    } else {
+      size = sizePick;
+    }
+  } else {
+    // Live catalog unavailable (offline, bad token, or provider has no catalog e.g. hetzner) -
+    // fall back to free-text inputs so init never hard-blocks.
+    console.log('Could not load the live size catalog - entering values manually.');
+    region = await input({ message: 'Default region', default: provider === 'hetzner' ? 'nbg1' : 'nyc1' });
+    size = await input({ message: 'Default server size', default: provider === 'hetzner' ? 'cx22' : 's-2vcpu-4gb' });
+  }
   console.log('Connectivity: tailscale = zero public ports, reachable from any device; direct = public IP, key-only SSH.');
   const sshMode = await select({
     message: 'Connectivity mode',
