@@ -20,6 +20,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the full, per-version feature list.
 
 ## Install
 
+> **First time? Read [SETUP.md](SETUP.md)** - a complete, beginner-friendly walkthrough from zero to connecting from your phone, including the DigitalOcean token and the full Tailscale setup. The sections below are the quick reference.
+
 roostr is not yet on the npm registry. Install from source - it only requires [Bun](https://bun.sh):
 
 ```sh
