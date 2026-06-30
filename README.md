@@ -117,7 +117,7 @@ Everything is provider-agnostic behind a single `Provider` interface - adding a 
 - **No sudo for `dev`.** An agent running arbitrary shell cannot escalate to root, alter the firewall, or exfiltrate host credentials. Root login and SSH password auth are disabled.
 - **Half-finished provisions are tracked.** A droplet is recorded the instant it exists, so a failed provision is never an untracked, silently-billing orphan.
 - **Tailscale ACL.** Apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once; it scopes `tag:devbox` to your own devices and the tag is never a `src`, so a compromised box cannot pivot across your tailnet.
-- **Minimal secrets in metadata.** The only secret that reaches the box via cloud-init `user_data` is the Tailscale auth key, and with the OAuth-client option it is single-use and expires in 30 minutes. Claude defaults to interactive on-box login, and private-clone tokens travel over SSH - neither touches metadata.
+- **Minimal secrets in metadata.** The only secret that reaches the box via cloud-init `user_data` is the Tailscale auth key, and with the OAuth-client option it is single-use and expires in 30 minutes. It is validated and shell-quoted before it is ever placed in a command. Nothing else touches metadata: Claude logs in interactively on the box (no token is ever injected), and private-clone tokens travel over the SSH session.
 
 ## Cost
 

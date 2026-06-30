@@ -116,7 +116,7 @@ It walks you through each choice. Here is what to pick:
 5. **Connectivity mode** -> `tailscale` (recommended - private, reachable from your phone).
 6. **Tailscale authentication** -> `OAuth client (recommended)` -> paste the **Client ID**, then the **Client secret**.
 7. **Agents to install** -> `claude-code` (press space to toggle, enter to confirm).
-8. **How should Claude Code authenticate** -> `Log in on the box (recommended)`.
+8. (Claude Code installs automatically - you log in on the box later by running `claude`; nothing is stored in metadata.)
 9. **SSH public key path** -> accept the default. If you do not have a key, roostr offers to generate one.
 10. **Provision your first box now?** -> `Yes`, then name it `box-1`.
 
