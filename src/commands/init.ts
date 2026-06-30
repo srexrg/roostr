@@ -13,6 +13,7 @@ import { buildPreflightDeps } from '../onboarding/preflight-deps.js';
 import { getProvider } from '../providers/index.js';
 import type { CloudSize, CloudRegion } from '../providers/provider.js';
 import { regionChoices, sizeChoices } from '../onboarding/catalog-select.js';
+import { isAuthError, tokenGuidance } from '../onboarding/token-help.js';
 
 export interface InitAnswers {
   provider: ProviderName;
@@ -51,31 +52,41 @@ export async function runInit(): Promise<void> {
       { value: 'hetzner' as const, name: 'Hetzner', description: 'Not yet supported - coming soon' },
     ],
   });
-  let token: string;
-  if (provider === 'digitalocean') {
-    const foundToken = await readDoctlToken();
-    if (foundToken !== null) {
-      const useFound = await confirm({ message: 'Found a doctl token - use it?', default: true });
-      if (useFound) {
-        token = foundToken;
-      } else {
-        token = await password({ message: `${provider} API token` });
+  let token = '';
+  let catalog: { regions: CloudRegion[]; sizes: CloudSize[] } | null = null;
+  let firstAttempt = true;
+  for (;;) {
+    // acquire token
+    let reused = false;
+    if (firstAttempt && provider === 'digitalocean') {
+      const found = await readDoctlToken();
+      if (found !== null && (await confirm({ message: 'Found a doctl token - use it?', default: true }))) {
+        token = found; reused = true;
       }
-    } else {
+    }
+    if (!reused) {
+      for (const line of tokenGuidance(provider)) console.log(line);
       token = await password({ message: `${provider} API token` });
     }
-  } else {
-    token = await password({ message: `${provider} API token` });
-  }
-  // Fetch the live catalog (try/catch wraps ONLY the network call so a prompt
-  // cancellation below is never swallowed). Null => fall back to manual entry.
-  let catalog: { regions: CloudRegion[]; sizes: CloudSize[] } | null = null;
-  try {
-    const prov = getProvider(provider, { token });
-    const [regions, sizes] = await Promise.all([prov.listRegions(), prov.listSizes()]);
-    if (regions.length > 0 && sizes.length > 0) catalog = { regions, sizes };
-  } catch {
-    catalog = null;
+    firstAttempt = false;
+
+    // validate by fetching the catalog (doubles as the size/region source)
+    try {
+      const prov = getProvider(provider, { token });
+      const [regions, sizes] = await Promise.all([prov.listRegions(), prov.listSizes()]);
+      if (regions.length > 0 && sizes.length > 0) catalog = { regions, sizes };
+      break; // token accepted (even if catalog is empty, the call succeeded)
+    } catch (err) {
+      if (isAuthError(err)) {
+        console.log('That token was rejected (needs Write / full access). Please try again.');
+        catalog = null;
+        continue; // re-prompt
+      }
+      // offline / non-auth / provider without a catalog (e.g. hetzner) - cannot validate now, do not block
+      console.log('Could not validate the token against the provider right now - continuing.');
+      catalog = null;
+      break;
+    }
   }
 
   let region: string;
