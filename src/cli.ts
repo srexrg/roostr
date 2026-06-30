@@ -50,7 +50,8 @@ export function buildProgram(): Command {
 
   program.command('doctor')
     .description('Check prerequisites and configuration')
-    .action(() => import('./commands/doctor.js').then((m) => m.runDoctor()));
+    .option('--fix', 'offer to install missing prerequisites')
+    .action((opts) => import('./commands/doctor.js').then((m) => m.runDoctor({ fix: opts.fix })));
 
   program.addHelpText('after', '\nQuickstart:\n  roostr init\n  roostr up --name box-1\n  roostr ssh box-1\n\nFirst time? run: roostr doctor\n');
 
