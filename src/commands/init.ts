@@ -14,6 +14,8 @@ import { getProvider } from '../providers/index.js';
 import type { CloudSize, CloudRegion } from '../providers/provider.js';
 import { regionChoices, sizeChoices } from '../onboarding/catalog-select.js';
 import { isAuthError, tokenGuidance } from '../onboarding/token-help.js';
+import { validateOAuthClient } from '../provisioning/tailscale-api.js';
+import { ProviderError } from '../core/errors.js';
 
 export interface InitAnswers {
   provider: ProviderName;
@@ -22,6 +24,7 @@ export interface InitAnswers {
   size: string;
   sshMode: SshMode;
   tailscaleAuthKey?: string;
+  tailscaleOAuth?: { clientId: string; clientSecret: string };
   agents: AgentName[];
   sshPublicKeyPath: string;
   claudeOauthToken?: string;
@@ -41,6 +44,10 @@ export async function persistInit(a: InitAnswers): Promise<void> {
   await saveConfig(buildConfigFromAnswers(a));
   await setSecret(a.provider, a.token);
   if (a.tailscaleAuthKey) await setSecret('tailscale', a.tailscaleAuthKey);
+  if (a.tailscaleOAuth) {
+    await setSecret('tailscale-oauth-client-id', a.tailscaleOAuth.clientId);
+    await setSecret('tailscale-oauth-client-secret', a.tailscaleOAuth.clientSecret);
+  }
   if (a.claudeOauthToken) await setSecret('claude-code', a.claudeOauthToken);
 }
 
@@ -126,9 +133,45 @@ export async function runInit(): Promise<void> {
     default: 'tailscale' as const,
   });
   let tailscaleAuthKey: string | undefined;
+  let tailscaleOAuth: { clientId: string; clientSecret: string } | undefined;
   if (sshMode === 'tailscale') {
-    console.log('Create a Tailscale auth key at: https://login.tailscale.com/admin/settings/keys');
-    tailscaleAuthKey = await password({ message: 'Tailscale auth key' });
+    const method = await select({
+      message: 'Tailscale authentication',
+      choices: [
+        { value: 'oauth', name: 'OAuth client (recommended)', description: 'roostr auto-mints a fresh single-use 30-min key for each box' },
+        { value: 'key',   name: 'Paste an auth key',          description: 'paste a tag:devbox key you mint yourself' },
+      ],
+      default: 'oauth',
+    });
+
+    if (method === 'key') {
+      console.log('Create a Tailscale auth key at: https://login.tailscale.com/admin/settings/keys');
+      tailscaleAuthKey = await password({ message: 'Tailscale auth key' });
+    } else {
+      console.log('Create a Tailscale OAuth client with the "auth_keys" write scope that owns tag:devbox:');
+      console.log('  https://login.tailscale.com/admin/settings/oauth');
+      for (;;) {
+        const clientId = await input({ message: 'OAuth client ID' });
+        const clientSecret = await password({ message: 'OAuth client secret' });
+        try {
+          await validateOAuthClient({ clientId, clientSecret });
+          tailscaleOAuth = { clientId, clientSecret };
+          break;
+        } catch (err) {
+          if (
+            err instanceof ProviderError &&
+            /401|403|invalid/i.test(err.message)
+          ) {
+            console.log('Credentials rejected - please try again.');
+            continue;
+          }
+          // offline or other transient error - save anyway
+          console.log('Could not validate right now - saving anyway.');
+          tailscaleOAuth = { clientId, clientSecret };
+          break;
+        }
+      }
+    }
 
     // Optional: offer tailscale CLI if missing
     const tailscaleMissing = spawnSync('which', ['tailscale']).status !== 0;
@@ -180,7 +223,7 @@ export async function runInit(): Promise<void> {
     }
   }
 
-  await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, agents, sshPublicKeyPath, claudeOauthToken });
+  await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, tailscaleOAuth, agents, sshPublicKeyPath, claudeOauthToken });
   console.log(`Configured: provider=${provider}  mode=${sshMode}  agents=${agents.join(', ') || 'none'}`);
 
   const provision = await confirm({ message: 'Provision your first box now?', default: false });

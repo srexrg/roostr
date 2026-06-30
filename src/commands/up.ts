@@ -16,6 +16,8 @@ import { cloneFragment } from '../provisioning/git-clone.js';
 import { syncLocal } from '../util/rsync.js';
 import { resolveSshTarget } from './ssh.js';
 import { basename } from 'node:path';
+import { resolveTailscaleAuthKey } from '../provisioning/tailscale-auth.js';
+import { mintTailscaleAuthKey } from '../provisioning/tailscale-api.js';
 
 export function validateSizeRegion(sizes: CloudSize[], size: string, region: string): void {
   if (sizes.length === 0) return; // best-effort: catalog unavailable
@@ -89,10 +91,10 @@ export async function runUp(flags: UpFlags): Promise<void> {
 
   let tailscaleAuthKey: string | undefined;
   if (spec.sshMode === 'tailscale') {
-    tailscaleAuthKey = (await getSecret('tailscale')) ?? undefined;
-    if (!tailscaleAuthKey) {
-      throw new ConfigError('no Tailscale auth key', 'run roostr init and choose tailscale mode');
-    }
+    tailscaleAuthKey = await resolveTailscaleAuthKey({
+      getSecret,
+      mint: (creds) => mintTailscaleAuthKey(creds),
+    });
   }
 
   const claudeOauthToken = (await getSecret('claude-code')) ?? undefined;
