@@ -4,7 +4,7 @@ export type SshMode = 'tailscale' | 'direct';
 export type ServerStatus = 'active' | 'incomplete' | 'drifted';
 
 export const PROVIDER_NAMES: ProviderName[] = ['digitalocean', 'hetzner'];
-export const AGENT_NAMES: AgentName[] = ['claude-code'];
+export const AGENT_NAMES: AgentName[] = ['claude-code', 'codex'];
 
 export interface ProviderDefaults {
   region: string;

@@ -5,7 +5,7 @@ describe('core types', () => {
   it('enumerates the v1 providers, digitalocean first', () => {
     expect(PROVIDER_NAMES).toEqual(['digitalocean', 'hetzner']);
   });
-  it('offers only claude-code for now', () => {
-    expect(AGENT_NAMES).toEqual(['claude-code']);
+  it('enumerates all supported agents', () => {
+    expect(AGENT_NAMES).toEqual(['claude-code', 'codex']);
   });
 });
