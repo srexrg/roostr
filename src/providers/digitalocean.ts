@@ -1,6 +1,7 @@
 import {
   type Provider, type ProviderServer, type ServerState,
   type CreateServerInput, type FirewallInput, ProviderHttpError,
+  type CloudSize, type CloudRegion,
 } from './provider.js';
 
 const BASE = 'https://api.digitalocean.com/v2';
@@ -124,6 +125,20 @@ export class DigitalOceanProvider implements Provider {
 
   async destroyFirewall(id: string): Promise<void> {
     await this.request<void>('DELETE', `/firewalls/${id}`);
+  }
+
+  async listSizes(): Promise<CloudSize[]> {
+    const data = await this.request<{ sizes: any[] }>('GET', '/sizes?per_page=200');
+    return (data.sizes ?? []).map((s) => ({
+      slug: s.slug, vcpus: s.vcpus, memoryGB: s.memory / 1024, diskGB: s.disk,
+      priceMonthly: s.price_monthly, currency: 'USD', arch: 'unknown' as const,
+      regions: s.regions ?? [], description: s.description, available: s.available,
+    }));
+  }
+
+  async listRegions(): Promise<CloudRegion[]> {
+    const data = await this.request<{ regions: any[] }>('GET', '/regions');
+    return (data.regions ?? []).map((r) => ({ slug: r.slug, name: r.name, available: r.available }));
   }
 }
 

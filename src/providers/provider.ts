@@ -2,6 +2,25 @@ import { ProviderError } from '../core/errors.js';
 
 export type ServerState = 'provisioning' | 'running' | 'stopped' | 'unknown';
 
+export interface CloudSize {
+  slug: string;
+  vcpus: number;
+  memoryGB: number;
+  diskGB: number;
+  priceMonthly: number;
+  currency: string;
+  arch: 'x86' | 'arm' | 'unknown';
+  regions: string[];
+  description?: string;
+  available?: boolean;
+}
+
+export interface CloudRegion {
+  slug: string;
+  name: string;
+  available: boolean;
+}
+
 export interface ProviderServer {
   id: string;
   state: ServerState;
@@ -33,6 +52,8 @@ export interface Provider {
   destroyServer(id: string): Promise<void>;
   ensureFirewall(input: FirewallInput): Promise<string>; // returns firewall id
   destroyFirewall(id: string): Promise<void>;
+  listSizes(): Promise<CloudSize[]>;
+  listRegions(): Promise<CloudRegion[]>;
 }
 
 export class ProviderHttpError extends ProviderError {
