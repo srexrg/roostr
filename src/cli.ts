@@ -17,6 +17,8 @@ export function buildProgram(): Command {
     .option('--provider <provider>', 'digitalocean | hetzner')
     .option('--region <region>')
     .option('--size <size>')
+    .option('--clone [repo]', 'clone a GitHub repo (owner/repo, or omit value to pick from your repos)')
+    .option('--copy <path>', 'rsync a local folder to the box')
     .action((opts) => import('./commands/up.js').then((m) => m.runUp(opts)));
 
   program.command('status')

@@ -14,6 +14,7 @@ afterEach(async () => { await rm(root, { recursive: true, force: true }); });
 const spec: BuildSpec = {
   name: 'box-1', provider: 'digitalocean', region: 'nyc1', size: 's-2vcpu-4gb',
   agents: ['claude-code'], sshMode: 'direct', sshPublicKeyPath: '/fake/key.pub',
+  project: { kind: 'fresh' },
 };
 
 function fakeProvider(over: Partial<Provider> = {}): Provider {
@@ -38,6 +39,7 @@ function baseDeps(provider: Provider): UpDeps {
     waitForReady: async () => ({ id: 'srv-1', state: 'running', publicIp: '203.0.113.7' }),
     now: () => '2026-06-29T00:00:00Z',
     agentRecipes: [],
+    extraFragments: [],
   };
 }
 
@@ -72,6 +74,15 @@ describe('orchestrator.up', () => {
     });
     await expect(up(spec, baseDeps(provider))).rejects.toThrow('boom');
     expect(destroyed).toBe('fw-orphan');
+  });
+
+  it('includes extraFragments (clone) in the cloud-init', async () => {
+    let userData = '';
+    const provider = fakeProvider({ createServer: async (i: any) => { userData = i.userData; return { id: 'srv-1', state: 'provisioning', publicIp: null }; } });
+    const deps = baseDeps(provider);
+    deps.extraFragments = [{ runcmd: ['echo CLONE_MARKER'] }];
+    await up(spec, deps);
+    expect(userData).toContain('echo CLONE_MARKER');
   });
 
   it('tailscale mode: closed firewall, records firewallId + tailscaleName, probes hostname', async () => {
