@@ -153,5 +153,6 @@ export async function runUp(flags: UpFlags): Promise<void> {
     const folderName = basename(spec.project.localPath.replace(/\/+$/, ''));
     console.log(`\n  Your folder is at ~/${folderName} - connect with: roostr ssh ${spec.name}`);
   }
+  console.log(`  From your phone: roostr mobile ${spec.name}`);
   console.log('');
 }

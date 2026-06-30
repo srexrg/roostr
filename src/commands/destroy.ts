@@ -4,6 +4,7 @@ import { getSecret } from '../state/secrets.js';
 import { getProvider } from '../providers/index.js';
 import { destroyServer } from '../core/orchestrator.js';
 import { getServerRecord } from '../state/store.js';
+import { removeSshConfigBlock } from '../util/ssh-config.js';
 
 export async function runDestroy(name: string, opts: { yes?: boolean }): Promise<void> {
   const record = await getServerRecord(name);
@@ -17,4 +18,5 @@ export async function runDestroy(name: string, opts: { yes?: boolean }): Promise
   const prov = getProvider(record.provider, { token: token ?? '' });
   await destroyServer(name, { provider: prov });
   console.log(`Destroyed ${name}.`);
+  try { await removeSshConfigBlock(name); } catch { /* best-effort */ }
 }
