@@ -14,18 +14,20 @@ roostr is built in stages. What works **today**:
 - ✅ Hardened boxes - non-root `dev` user (no sudo), root + password SSH disabled, key-only OpenSSH, swap
 - ✅ Firewall created before the droplet - no open-port window even during boot; plus an on-box **ufw** layer scoped to the Tailscale interface
 - ✅ Readiness polling - `up` returns only once the box is actually reachable
-- ✅ Reconciled `status` with drift detection + a monthly cost estimate
+- ✅ Reconciled `status` with drift detection + **live monthly cost** fetched from the provider catalog (not a static estimate)
 - ✅ Secrets kept out of config and off your shell history
 - ✅ **Tailscale** connectivity - zero public inbound ports; reach your box over the tailnet with `roostr ssh <name>` or `ssh dev@<name>` (standard key-only OpenSSH, no Tailscale SSH daemon)
 - ✅ **Claude Code** installed on the box at provision time - authenticated via token injection or interactive browser flow
+- ✅ **Codex** installed on the box at provision time (select it in `roostr init`); authenticate by exporting `OPENAI_API_KEY`, or run `codex login` for a browser-based ChatGPT account flow
 - ✅ `roostr ssh` - drops you straight into a persistent `tmux` session on the box
+- ✅ `roostr sizes` - lists live server sizes and prices for a provider, cheapest first
+- ✅ `roostr up` validates your requested size and region against the live catalog before creating anything, and errors early with a pointer to `roostr sizes` if the size does not exist or is not available in that region
 
 **Note:** Tailscale mode requires the Tailscale app running on your device (phone or laptop) to connect. Install from [tailscale.com/download](https://tailscale.com/download) and sign in to the same tailnet as your server. Mint a `tag:devbox` auth key in the Tailscale admin console and apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach.
 
 On the roadmap:
 
 - ⏳ **Hetzner** provider (the abstraction is already in place)
-- ⏳ **Codex** agent install
 
 ## Install
 
@@ -44,9 +46,10 @@ bun link            # makes `roostr` available on your PATH
 
 ```sh
 roostr init                       # pick provider, paste token, set defaults
+roostr sizes                      # list available sizes and live prices, cheapest first
 roostr up --name box-1            # provision a hardened droplet (~2 min)
 roostr ssh box-1                  # drop into a persistent tmux session on the box
-roostr status                     # live state, public IP, ~cost/mo
+roostr status                     # live state, public IP, live cost/mo from provider catalog
 roostr destroy box-1 --yes        # delete it - stops billing
 ```
 
