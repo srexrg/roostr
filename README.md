@@ -1,5 +1,8 @@
 # roostr
 
+[![npm version](https://img.shields.io/npm/v/roostr.svg)](https://www.npmjs.com/package/roostr)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 > Spin up a hardened, agent-ready VPS on **your own** cloud account in one command - and tear it down just as fast.
 
 Move your coding agents (Claude Code, Codex) off your laptop and onto a persistent remote box you can reach from anywhere - your phone included - so work keeps running with the lid closed.
@@ -22,17 +25,19 @@ roostr is **a tool, not a middleman.** It runs entirely on your machine, uses *y
 
 ## Install
 
-Not yet on the npm registry - install from source (requires [Bun](https://bun.sh)):
+```sh
+npm install -g roostr
+roostr doctor      # confirm prerequisites are in place
+```
+
+Or from source (requires [Bun](https://bun.sh)):
 
 ```sh
 git clone git@github.com:srexrg/roostr.git
 cd roostr
 bun install      # also builds the CLI
 bun link         # puts `roostr` on your PATH
-roostr doctor    # confirm prerequisites are in place
 ```
-
-(Once published: `npm install -g roostr`.)
 
 ## Quickstart
 
