@@ -14,7 +14,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full, per-version feature list.
 
 **Roadmap:** Hetzner provider (the provider abstraction is already in place).
 
-> **Tailscale note:** Tailscale mode needs the [Tailscale](https://tailscale.com/download) app running on your device and signed in to the same tailnet as the box. Mint a `tag:devbox` auth key in the admin console and apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach.
+> **Tailscale note:** Tailscale mode needs the [Tailscale](https://tailscale.com/download) app running on your device and signed in to the same tailnet as the box. Apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach. For the auth key, `roostr init` offers two ways: an **OAuth client** (recommended - roostr auto-mints a fresh, single-use, 30-minute `tag:devbox` key for each box, so nothing long-lived sits in droplet metadata), or **paste a `tag:devbox` key** you mint yourself. Connections use standard key-only OpenSSH over the tailnet (no Tailscale SSH daemon), and Mosh is installed for resilient sessions that survive Wi-Fi/cellular handoffs.
 
 ## Install
 
