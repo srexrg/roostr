@@ -1,10 +1,12 @@
 import type { CloudInitFragment } from '../agents/recipe.js';
 
+const q = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
+
 export function tailscaleFragment(opts: { authKey: string; hostname: string }): CloudInitFragment {
   return {
     runcmd: [
       'curl -fsSL https://tailscale.com/install.sh | sh',
-      `tailscale up --auth-key=${opts.authKey} --hostname=${opts.hostname} --accept-dns`,
+      `tailscale up --auth-key=${q(opts.authKey)} --hostname=${q(opts.hostname)} --accept-dns`,
       'DEBIAN_FRONTEND=noninteractive apt-get install -y mosh',
       // Only after tailscale0 exists: lock the box to the tailnet (key-only OpenSSH over the tunnel).
       'ufw default deny incoming',

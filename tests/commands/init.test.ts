@@ -35,13 +35,8 @@ describe('init', () => {
     expect(await getSecret('digitalocean')).toBe('tok-123');
     expect(await getSecret('tailscale')).toBe('tskey-abc');
   });
-  it('persists a Claude OAuth token as a secret when provided', async () => {
-    await persistInit({ ...answers, claudeOauthToken: 'claude-tok-1' });
-    const { getSecret } = await import('../../src/state/secrets.js');
-    expect(await getSecret('claude-code')).toBe('claude-tok-1');
-  });
-  it('does not write a claude secret when no token given', async () => {
-    await persistInit(answers); // answers has no claudeOauthToken
+  it('does not write a claude secret (token path removed)', async () => {
+    await persistInit(answers);
     const { getSecret } = await import('../../src/state/secrets.js');
     expect(await getSecret('claude-code')).toBeNull();
   });

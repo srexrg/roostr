@@ -16,6 +16,7 @@ import { regionChoices, sizeChoices } from '../onboarding/catalog-select.js';
 import { isAuthError, tokenGuidance } from '../onboarding/token-help.js';
 import { validateOAuthClient } from '../provisioning/tailscale-api.js';
 import { ProviderError } from '../core/errors.js';
+import { validateTailscaleAuthKey } from '../util/validate.js';
 
 export interface InitAnswers {
   provider: ProviderName;
@@ -27,7 +28,6 @@ export interface InitAnswers {
   tailscaleOAuth?: { clientId: string; clientSecret: string };
   agents: AgentName[];
   sshPublicKeyPath: string;
-  claudeOauthToken?: string;
 }
 
 export function buildConfigFromAnswers(a: InitAnswers): Config {
@@ -48,7 +48,6 @@ export async function persistInit(a: InitAnswers): Promise<void> {
     await setSecret('tailscale-oauth-client-id', a.tailscaleOAuth.clientId);
     await setSecret('tailscale-oauth-client-secret', a.tailscaleOAuth.clientSecret);
   }
-  if (a.claudeOauthToken) await setSecret('claude-code', a.claudeOauthToken);
 }
 
 export async function runInit(): Promise<void> {
@@ -141,7 +140,11 @@ export async function runInit(): Promise<void> {
 
     if (method === 'key') {
       console.log('Create a Tailscale auth key at: https://login.tailscale.com/admin/settings/keys');
-      tailscaleAuthKey = await password({ message: 'Tailscale auth key' });
+      for (;;) {
+        const k = (await password({ message: 'Tailscale auth key' })).trim();
+        try { validateTailscaleAuthKey(k); tailscaleAuthKey = k; break; }
+        catch { console.log('That does not look like a Tailscale auth key (it starts with tskey-). Try again.'); }
+      }
     } else {
       console.log('Create a Tailscale OAuth client with the "auth_keys" write scope that owns tag:devbox:');
       console.log('  https://login.tailscale.com/admin/settings/oauth');
@@ -185,21 +188,8 @@ export async function runInit(): Promise<void> {
     message: 'Agents to install',
     choices: AGENT_NAMES.map((a) => ({ value: a, checked: a === 'claude-code' })),
   });
-  let claudeOauthToken: string | undefined;
   if (agents.includes('claude-code')) {
-    const how = await select({
-      message: 'How should Claude Code authenticate on the box?',
-      choices: [
-        { value: 'interactive', name: 'Log in on the box (recommended)', description: 'run `claude` over SSH and do the paste-code login; no token in droplet metadata' },
-        { value: 'token',       name: 'Paste a setup-token now',         description: 'convenient, but the token is stored in the box cloud-init metadata' },
-      ],
-      default: 'interactive',
-    });
-    if (how === 'token') {
-      console.log('Run `claude setup-token` on THIS machine and paste the token.');
-      const t = await password({ message: 'Claude setup-token' });
-      claudeOauthToken = t || undefined;
-    }
+    console.log('Claude Code will be installed; log in with `claude` on the box after connecting.');
   }
   const sshPublicKeyPath = await input({
     message: 'SSH public key path',
@@ -227,7 +217,7 @@ export async function runInit(): Promise<void> {
     }
   }
 
-  await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, tailscaleOAuth, agents, sshPublicKeyPath, claudeOauthToken });
+  await persistInit({ provider, token, region, size, sshMode, tailscaleAuthKey, tailscaleOAuth, agents, sshPublicKeyPath });
   console.log(`Configured: provider=${provider}  mode=${sshMode}  agents=${agents.join(', ') || 'none'}`);
 
   const provision = await confirm({ message: 'Provision your first box now?', default: false });

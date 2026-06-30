@@ -50,7 +50,7 @@ describe('buildCloudInit composition', () => {
         claudeCodeRecipe.fragment({ username: 'dev' }),
       ],
     });
-    expect(out).toContain('--auth-key=tskey-abc');     // tailscale
+    expect(out).toContain("--auth-key='tskey-abc'");     // tailscale (single-quoted)
     expect(out).toContain('claude.ai/install.sh');     // agent
     // sentinel is the final runcmd
     const sentinelIdx = out.lastIndexOf(SENTINEL_PATH);

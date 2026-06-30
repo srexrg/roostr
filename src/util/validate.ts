@@ -10,3 +10,10 @@ export function validateServerName(name: string): void {
     );
   }
 }
+
+// Tailscale auth keys look like `tskey-...` / `tskey-auth-...` - letters, digits, hyphens only.
+export function validateTailscaleAuthKey(key: string): void {
+  if (!/^tskey-[A-Za-z0-9-]+$/.test(key.trim())) {
+    throw new ConfigError('that does not look like a Tailscale auth key', 'it should start with tskey-');
+  }
+}

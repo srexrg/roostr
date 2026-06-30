@@ -16,7 +16,6 @@ export interface UpDeps {
   now: () => string;
   agentRecipes: import('../agents/recipe.js').AgentRecipe[];
   tailscaleAuthKey?: string;
-  claudeOauthToken?: string;
   extraFragments?: import('../agents/recipe.js').CloudInitFragment[];
 }
 
@@ -29,7 +28,7 @@ export async function up(spec: BuildSpec, deps: UpDeps): Promise<ServerRecord> {
     ...(isTailscale && deps.tailscaleAuthKey
       ? [tailscaleFragment({ authKey: deps.tailscaleAuthKey, hostname: spec.name })]
       : []),
-    ...deps.agentRecipes.map((r) => r.fragment({ username: 'dev', oauthToken: deps.claudeOauthToken })),
+    ...deps.agentRecipes.map((r) => r.fragment({ username: 'dev' })),
     ...(deps.extraFragments ?? []),
   ];
   const userData = buildCloudInit({ username: 'dev', sshPublicKey: publicKey, fragments });

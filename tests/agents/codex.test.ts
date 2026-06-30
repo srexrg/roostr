@@ -8,10 +8,10 @@ describe('codexRecipe', () => {
     expect(s).toContain('su - dev -c');
   });
   it('does not embed any token (auth is manual)', () => {
-    const s = (codexRecipe.fragment({ username: 'dev', oauthToken: 'should-be-ignored' }).runcmd ?? []).join('\n');
-    expect(s).not.toContain('should-be-ignored');
+    const s = (codexRecipe.fragment({ username: 'dev' }).runcmd ?? []).join('\n');
+    expect(s).not.toContain('OPENAI_API_KEY');
   });
   it('first-run hint mentions OPENAI_API_KEY', () => {
-    expect(codexRecipe.firstRunHint({ hasToken: false })).toMatch(/OPENAI_API_KEY/);
+    expect(codexRecipe.firstRunHint()).toMatch(/OPENAI_API_KEY/);
   });
 });

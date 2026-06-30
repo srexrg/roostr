@@ -97,8 +97,6 @@ export async function runUp(flags: UpFlags): Promise<void> {
     });
   }
 
-  const claudeOauthToken = (await getSecret('claude-code')) ?? undefined;
-
   const extraFragments: never[] = [];
 
   const rec = await up(spec, {
@@ -107,7 +105,6 @@ export async function runUp(flags: UpFlags): Promise<void> {
     detectPublicIp: () => detectPublicIp(),
     agentRecipes,
     tailscaleAuthKey,
-    claudeOauthToken,
     extraFragments,
     waitForReady: (serverId, _server, probeHost) => waitForReady(serverId, {
       getServer: (id) => prov.getServer(id),
@@ -156,7 +153,7 @@ export async function runUp(flags: UpFlags): Promise<void> {
     console.log(`  Connect directly:   ssh dev@${rec.publicIp}`);
   }
   for (const recipe of agentRecipes) {
-    console.log(`\n  ${recipe.name}: ${recipe.firstRunHint({ hasToken: !!claudeOauthToken })}`);
+    console.log(`\n  ${recipe.name}: ${recipe.firstRunHint()}`);
   }
   if (spec.project.kind === 'clone') {
     const repoName = spec.project.repo.split('/')[1];

@@ -7,6 +7,6 @@ export interface CloudInitFragment {
 
 export interface AgentRecipe {
   name: AgentName;
-  fragment(opts: { username: string; oauthToken?: string }): CloudInitFragment;
-  firstRunHint(opts: { hasToken: boolean }): string;
+  fragment(opts: { username: string }): CloudInitFragment;
+  firstRunHint(): string;
 }

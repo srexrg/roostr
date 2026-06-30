@@ -26,6 +26,6 @@ export async function runSsh(name?: string): Promise<void> {
   if (!record) { console.error(`No server named ${name}. Run: roostr status`); process.exitCode = 1; return; }
   const { user, host } = resolveSshTarget(record);
   // -t forces a TTY; tmux new -A attaches an existing 'roostr' session or creates it.
-  const child = spawn('ssh', ['-t', `${user}@${host}`, 'tmux new -A -s roostr'], { stdio: 'inherit' });
+  const child = spawn('ssh', ['-t', '-o', 'StrictHostKeyChecking=accept-new', `${user}@${host}`, 'tmux new -A -s roostr'], { stdio: 'inherit' });
   await new Promise<void>((resolve) => child.on('close', () => resolve()));
 }
