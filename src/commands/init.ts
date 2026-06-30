@@ -52,13 +52,9 @@ export async function persistInit(a: InitAnswers): Promise<void> {
 }
 
 export async function runInit(): Promise<void> {
-  const provider = await select({
-    message: 'Cloud provider',
-    choices: [
-      { value: 'digitalocean' as const, name: 'DigitalOcean', description: 'Fully supported - recommended for new users' },
-      { value: 'hetzner' as const, name: 'Hetzner', description: 'Not yet supported - coming soon' },
-    ],
-  });
+  // Only DigitalOcean is supported today; skip the prompt rather than offer an unusable choice.
+  const provider: ProviderName = 'digitalocean';
+  console.log('Cloud provider: DigitalOcean');
   let token = '';
   let catalog: { regions: CloudRegion[]; sizes: CloudSize[] } | null = null;
   let firstAttempt = true;
@@ -117,11 +113,10 @@ export async function runInit(): Promise<void> {
       size = sizePick;
     }
   } else {
-    // Live catalog unavailable (offline, bad token, or provider has no catalog e.g. hetzner) -
-    // fall back to free-text inputs so init never hard-blocks.
+    // Live catalog unavailable (offline or bad token) - fall back to free-text inputs so init never hard-blocks.
     console.log('Could not load the live size catalog - entering values manually.');
-    region = await input({ message: 'Default region', default: provider === 'hetzner' ? 'nbg1' : 'nyc1' });
-    size = await input({ message: 'Default server size', default: provider === 'hetzner' ? 'cx22' : 's-2vcpu-4gb' });
+    region = await input({ message: 'Default region', default: 'nyc1' });
+    size = await input({ message: 'Default server size', default: 's-2vcpu-4gb' });
   }
   console.log('Connectivity: tailscale = zero public ports, reachable from any device; direct = public IP, key-only SSH.');
   const sshMode = await select({
