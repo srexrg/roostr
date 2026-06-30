@@ -4,3 +4,7 @@ dist/
 secrets.json
 *.log
 .DS_Store
+
+# local-only docs (kept out of git per request)
+docs/
+CHANGELOG.md
