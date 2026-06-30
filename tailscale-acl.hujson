@@ -1,0 +1,21 @@
+// roostr reference Tailscale ACL. Apply once in the admin console (Access Controls).
+// Port-scoped: devbox accepts only SSH and Mosh UDP from your own devices, and can
+// never be used as a source to reach anything else (a compromised box cannot pivot).
+{
+  // tagOwners: who can apply the tag:devbox tag to machines.
+  // Only admins can tag a device as a devbox - prevents self-promotion by untrusted nodes.
+  "tagOwners": {
+    "tag:devbox": ["autogroup:admin"],
+  },
+  "acls": [
+    // Your own devices -> devbox, SSH only (port 22, key-only OpenSSH over the tailnet).
+    { "action": "accept", "src": ["autogroup:member"], "dst": ["tag:devbox:22"] },
+    // Your own devices -> devbox, Mosh UDP range (stateful shell reconnect).
+    { "action": "accept", "src": ["autogroup:member"], "dst": ["tag:devbox:60000-61000"] },
+    // tag:devbox intentionally never appears as a src.
+    // A compromised box therefore cannot initiate connections to the rest of your tailnet.
+  ],
+  // Multi-tenancy note: this ACL isolates devboxes from the internet but not from
+  // each other on the same tailnet. For true tenant isolation, run a separate tailnet
+  // (or Headscale instance) per tenant so their devboxes are on completely separate networks.
+}

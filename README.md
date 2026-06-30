@@ -11,16 +11,16 @@ It is **a tool, not a middleman.** It runs entirely on your machine, uses *your*
 roostr is built in stages. What works **today**:
 
 - ✅ **DigitalOcean** provisioning - `up` / `status` / `destroy`
-- ✅ Hardened boxes - non-root user, root + password SSH disabled, swap, key-only auth
-- ✅ Firewall locked to **your** IP (port 22 only), nothing else inbound - or zero exposed ports via Tailscale
+- ✅ Hardened boxes - non-root `dev` user (no sudo), root + password SSH disabled, key-only OpenSSH, swap
+- ✅ Firewall created before the droplet - no open-port window even during boot; plus an on-box **ufw** layer scoped to the Tailscale interface
 - ✅ Readiness polling - `up` returns only once the box is actually reachable
 - ✅ Reconciled `status` with drift detection + a monthly cost estimate
 - ✅ Secrets kept out of config and off your shell history
-- ✅ **Tailscale** connectivity - zero exposed ports; reach your box from your phone, laptop, or anywhere on your tailnet
+- ✅ **Tailscale** connectivity - zero public inbound ports; reach your box over the tailnet with `roostr ssh <name>` or `ssh dev@<name>` (standard key-only OpenSSH, no Tailscale SSH daemon)
 - ✅ **Claude Code** installed on the box at provision time - authenticated via token injection or interactive browser flow
 - ✅ `roostr ssh` - drops you straight into a persistent `tmux` session on the box
 
-**Note:** Tailscale mode requires the Tailscale app running on your device (phone or laptop) to connect. Install from [tailscale.com/download](https://tailscale.com/download) and sign in to the same tailnet as your server.
+**Note:** Tailscale mode requires the Tailscale app running on your device (phone or laptop) to connect. Install from [tailscale.com/download](https://tailscale.com/download) and sign in to the same tailnet as your server. Mint a `tag:devbox` auth key in the Tailscale admin console and apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once to lock down what your devboxes can reach.
 
 On the roadmap:
 
@@ -68,10 +68,14 @@ Everything is provider-agnostic behind a single `Provider` interface - adding a 
 ## Security model
 
 - **You are the only one who holds your credentials.** The provider token is read from your machine and used to call the provider API directly. Nothing phones home.
-- **Firewall, per mode:** in Tailscale mode the box has **zero inbound rules** - nothing is exposed to the internet, and you reach it only over your tailnet. In direct mode the firewall opens port 22 to **your current public IP** only, and nothing else.
-- cloud-init disables root login and SSH password auth; you log in as a non-root `dev` user with key-only auth.
+- **Firewall-at-create, no open window:** roostr creates the DigitalOcean firewall (tagged to the droplet) before creating the droplet. Because enrollment is by tag, the network policy is in effect from the very first packet - there is no window where port 22 is briefly exposed to the internet, even during boot.
+- **On-box ufw layer:** a second firewall layer inside the droplet (ufw) restricts SSH to the `tailscale0` interface only. Even if a public IP were somehow reachable, the kernel drops the connection before sshd sees it.
+- **Zero public inbound (Tailscale mode):** the box has no inbound rules for public traffic. You reach it exclusively over your tailnet - `roostr ssh <name>` or `ssh dev@<name>` uses key-only OpenSSH tunneled through Tailscale MagicDNS (no Tailscale SSH daemon, standard sshd only).
+- **No sudo for `dev`:** cloud-init creates a `dev` user without sudo rights. An agent running arbitrary shell commands cannot escalate to root and cannot install kernel modules, alter firewall rules, or exfiltrate host credentials.
+- cloud-init disables root login and SSH password auth. The `dev` user authenticates with your SSH public key only.
 - A droplet is recorded as `incomplete` the instant it exists - so a half-finished provision is never an untracked, silently-billing orphan.
-- **Caveat: secrets in cloud-init.** In Tailscale mode the Tailscale auth key, and the Claude Code setup-token if you provide one, are passed to the box through cloud-init `user_data`, which the provider stores in droplet metadata and is readable from the box itself. For a single-user box on your own account this is low risk, but prefer a **single-use or ephemeral** Tailscale auth key, and note that logging into Claude interactively (`claude`) instead of supplying a token keeps the token off the box's metadata entirely.
+- **Tailscale ACL:** apply [`tailscale-acl.hujson`](tailscale-acl.hujson) once in your Tailscale admin console. It scopes `tag:devbox` to accept SSH and Mosh from your own devices only, and the tag never appears as a `src` - a compromised box cannot pivot to the rest of your tailnet. Mint a `tag:devbox` auth key (single-use or ephemeral) to avoid reusable keys in droplet metadata.
+- **Caveat: secrets in cloud-init.** The Tailscale auth key, and the Claude Code setup-token if you provide one, are passed through cloud-init `user_data`, which the provider stores in droplet metadata and is readable from the box itself. For a single-user box on your own account this is low risk, but prefer a **single-use or ephemeral** Tailscale auth key, and note that logging into Claude interactively (`claude`) instead of supplying a token keeps the token off the box's metadata entirely.
 
 ## Cost
 
