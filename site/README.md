@@ -14,8 +14,8 @@ bun run preview    # serve the built site
 
 ## Deploy
 
-Static output, host anywhere. Set the **Root/Base directory** to `site` and Astro's
-config files do the rest (`vercel.json`, `netlify.toml`).
+Static output. On Vercel, import the repo and set the **Root Directory** to `site`;
+`vercel.json` supplies the build command and output dir.
 
 Before deploying, set `site` in `astro.config.mjs` to your final domain so canonical
 and Open Graph URLs resolve.
