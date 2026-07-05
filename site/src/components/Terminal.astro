@@ -1,0 +1,66 @@
+---
+// Each line is an HTML string (trusted, authored locally) using the segment
+// classes below: <span class="p">$</span>, .cmd, .out, .ok, .warn, .dim.
+// An empty string renders a blank spacer line.
+interface Props {
+  title?: string;
+  lines: string[];
+  class?: string;
+}
+const { title = 'roostr', lines, class: klass = '' } = Astro.props;
+---
+
+<div class={`term ${klass}`}>
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot live"></span>
+    <span class="term-title">{title}</span>
+  </div>
+  <div class="term-body">
+    {lines.map((l) => (
+      l === '' ? <div class="line line-gap"></div> : <div class="line" set:html={l} />
+    ))}
+  </div>
+</div>
+
+<style>
+  .term {
+    background: var(--ink-raised);
+    border: 1px solid var(--ink-line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 30px 80px -46px oklch(0 0 0 / 0.75);
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--ink-line);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--ink-line); }
+  .dot.live { background: var(--ember); }
+  .term-title {
+    margin-left: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--dawn-faint);
+  }
+  .term-body {
+    padding: 1.1rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.85;
+    overflow-x: auto;
+  }
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .line-gap { height: 0.9em; }
+</style>
+
+<style is:global>
+  .term-body .p { color: var(--ember); font-weight: 500; }
+  .term-body .cmd { color: var(--dawn); }
+  .term-body .out { color: var(--dawn-dim); }
+  .term-body .ok { color: var(--sage); }
+  .term-body .warn { color: var(--rust); }
+  .term-body .dim { color: var(--dawn-faint); }
+</style>

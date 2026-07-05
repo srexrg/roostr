@@ -1,0 +1,47 @@
+---
+// A tip / note callout. Uses a leading marker, no side-stripe border.
+interface Props { tone?: 'tip' | 'warn'; label?: string; }
+const { tone = 'tip', label } = Astro.props;
+const defaultLabel = tone === 'warn' ? 'watch out' : 'smoother';
+---
+
+<aside class={`callout callout-${tone}`}>
+  <span class="callout-label">{label ?? defaultLabel}</span>
+  <div class="callout-body"><slot /></div>
+</aside>
+
+<style>
+  .callout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.9rem;
+    align-items: start;
+    background: var(--ink-sunk);
+    border: 1px solid var(--ink-line-soft);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    margin-block: 1.1rem;
+    font-size: 0.92rem;
+  }
+  .callout-label {
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.28rem 0.5rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    background: color-mix(in oklab, var(--ember) 16%, var(--ink-raised));
+    color: var(--ember);
+  }
+  .callout-warn .callout-label {
+    background: color-mix(in oklab, var(--rust) 18%, var(--ink-raised));
+    color: var(--rust);
+  }
+  .callout-body { color: var(--dawn-dim); }
+</style>
+
+<style is:global>
+  .callout-body a { color: var(--ember); text-decoration: underline; text-underline-offset: 2px; }
+  .callout-body code { font-size: 0.82em; }
+</style>

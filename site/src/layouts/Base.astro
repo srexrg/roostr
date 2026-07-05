@@ -1,0 +1,89 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'roostr — your agents, off the laptop and onto a roost you own',
+  description = 'Spin up a hardened, agent-ready VPS on your own cloud account in one command, private by default, reachable from your phone. A tool, not a middleman.',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#231a12" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <slot />
+
+    <script>
+      // Reveal-on-scroll. Respects reduced-motion (elements already visible via CSS).
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const els = Array.from(document.querySelectorAll('[data-reveal]'));
+      if (prefersReduced || !('IntersectionObserver' in window)) {
+        els.forEach((el) => el.classList.add('is-in'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-in');
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.14, rootMargin: '0px 0px -8% 0px' }
+        );
+        els.forEach((el) => io.observe(el));
+      }
+
+      // Copy-to-clipboard for command chips.
+      document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const text = btn.getAttribute('data-copy') || '';
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.classList.add('copied');
+            const label = btn.querySelector('[data-copy-label]');
+            const prev = label?.textContent;
+            if (label) label.textContent = 'copied';
+            setTimeout(() => {
+              btn.classList.remove('copied');
+              if (label && prev) label.textContent = prev;
+            }, 1400);
+          } catch {
+            /* clipboard unavailable — no-op */
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

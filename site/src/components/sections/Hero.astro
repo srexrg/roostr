@@ -1,0 +1,113 @@
+---
+import Terminal from '../Terminal.astro';
+import CopyCommand from '../CopyCommand.astro';
+
+const initLines = [
+  '<span class="p">$</span> <span class="cmd">roostr init</span>',
+  '<span class="dim">✳  checking prerequisites…</span>',
+  '<span class="ok">✔</span> <span class="out">tailscale · gh · ssh present</span>',
+  '<span class="ok">✔</span> <span class="out">firewall created before droplet</span>',
+  '<span class="ok">✔</span> <span class="out">box-1 provisioned  ·  $6/mo</span>',
+  '<span class="ok">✔</span> <span class="out">claude code ready, private over tailnet</span>',
+  '',
+  '<span class="p">$</span> <span class="cmd">roostr ssh box-1</span>',
+  '<span class="out">→ attaching persistent tmux session…</span>',
+];
+---
+
+<section class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="kicker hero-anim" style="--d:0ms">your keys · your cloud · your box</span>
+      <h1 class="hero-anim" style="--d:80ms">
+        Your agents, off the laptop and onto a <em>roost you own.</em>
+      </h1>
+      <p class="lede hero-anim" style="--d:170ms">
+        One command spins up a hardened, agent-ready box on your own cloud
+        account, private by default, reachable from your phone. roostr is a tool,
+        not a middleman: it never routes anything through anyone else.
+      </p>
+      <div class="hero-cta hero-anim" style="--d:260ms">
+        <CopyCommand command="npm install -g roostr" prompt={false} />
+        <a class="btn btn-ghost" href="/setup">Read the setup guide →</a>
+      </div>
+      <p class="hero-meta hero-anim" style="--d:340ms">
+        DigitalOcean · Tailscale · MIT licensed
+      </p>
+    </div>
+
+    <div class="hero-term hero-anim" style="--d:200ms">
+      <Terminal title="roostr — init" lines={initLines} />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero { position: relative; padding-block: clamp(2.5rem, 6vw, 5.5rem) clamp(4rem, 9vw, 7rem); }
+  .glow {
+    position: absolute;
+    inset: -10% -20% 0 -20%;
+    z-index: 0;
+    background: radial-gradient(
+      54% 60% at 32% 92%,
+      var(--ember-glow),
+      oklch(0.69 0.19 42 / 0.05) 42%,
+      transparent 68%
+    );
+    pointer-events: none;
+    filter: blur(4px);
+  }
+  .hero-grid {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+  h1 {
+    font-size: var(--step-5);
+    font-weight: 800;
+    margin-block: 1.1rem 0;
+  }
+  h1 em { font-style: normal; color: var(--ember); }
+  .lede {
+    font-size: var(--step-1);
+    color: var(--dawn-dim);
+    max-width: 42ch;
+    margin-top: 1.4rem;
+    line-height: 1.55;
+  }
+  .hero-cta {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+  .hero-meta {
+    margin-top: 1.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    color: var(--dawn-faint);
+  }
+
+  /* orchestrated first-load reveal */
+  .hero-anim {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise 0.8s var(--ease-out) forwards;
+    animation-delay: var(--d, 0ms);
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-anim { animation: none; opacity: 1; transform: none; }
+  }
+
+  @media (max-width: 880px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-term { order: 2; }
+  }
+</style>

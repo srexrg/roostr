@@ -1,0 +1,102 @@
+---
+const features = [
+  {
+    title: 'One command, install to running box',
+    body: 'roostr init runs a prerequisite preflight, explains each choice with a sensible default, and provisions your first box at the end. Go from install to a live box without leaving the terminal.',
+    code: 'roostr init',
+  },
+  {
+    title: 'Hardened from the first packet',
+    body: 'Non-root dev user with no sudo, key-only OpenSSH, and the tagged firewall created before the droplet so port 22 is never briefly exposed, even during boot. A second on-box ufw layer pins SSH to the tailnet interface.',
+  },
+  {
+    title: 'Private by default',
+    body: 'Reachable only over your Tailscale tailnet with zero public inbound ports. No Tailscale SSH daemon, standard sshd only, through MagicDNS.',
+  },
+  {
+    title: 'Reach it from your phone',
+    body: 'Authorize a phone key, get a connection card and QR, and drop straight into a persistent tmux session that follows you between devices. Mosh keeps it alive across Wi-Fi and cellular handoffs.',
+    code: 'roostr mobile box-1',
+  },
+  {
+    title: 'Agents preinstalled',
+    body: 'Claude Code, and optionally Codex, set up at provision time. Claude logs in interactively on the box, so no agent token is ever injected into cloud metadata.',
+  },
+  {
+    title: 'Live pricing, cheapest first',
+    body: 'Pick region and size from the real provider catalog, sorted cheapest first with specs and monthly cost. status shows live state, public IP, and what the box costs.',
+    code: 'roostr sizes',
+  },
+];
+---
+
+<section id="features" class="section divide">
+  <div class="wrap">
+    <header class="feat-head" data-reveal>
+      <span class="kicker">what one command actually does</span>
+      <h2>Everything hardened, nothing phoning home.</h2>
+    </header>
+
+    <ol class="features">
+      {features.map((f, i) => (
+        <li class="feat" data-reveal style={`--reveal-delay:${i * 60}ms`}>
+          <span class="feat-idx">{String(i + 1).padStart(2, '0')}</span>
+          <div class="feat-body">
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+            {f.code && <code class="feat-code">$ {f.code}</code>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .feat-head { max-width: 30ch; margin-bottom: clamp(2.2rem, 5vw, 3.4rem); }
+  .feat-head h2 { font-size: var(--step-4); margin-top: 0.7rem; }
+
+  .features {
+    list-style: none;
+    padding: 0;
+    counter-reset: none;
+    border-top: 1px solid var(--ink-line-soft);
+  }
+  .feat {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: clamp(1rem, 3vw, 2.2rem);
+    padding-block: clamp(1.4rem, 3vw, 1.9rem);
+    border-bottom: 1px solid var(--ink-line-soft);
+    align-items: start;
+  }
+  .feat-idx {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--ember);
+    padding-top: 0.35rem;
+  }
+  .feat-body h3 {
+    font-size: var(--step-2);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .feat-body p {
+    color: var(--dawn-dim);
+    max-width: 62ch;
+    font-size: 0.98rem;
+  }
+  .feat-code {
+    display: inline-block;
+    margin-top: 0.9rem;
+    background: var(--ink-sunk);
+    border: 1px solid var(--ink-line-soft);
+    color: var(--straw);
+    font-size: 0.82rem;
+    padding: 0.35rem 0.7rem;
+  }
+  @media (max-width: 560px) {
+    .feat { grid-template-columns: 1fr; gap: 0.5rem; }
+    .feat-idx { padding-top: 0; }
+  }
+</style>

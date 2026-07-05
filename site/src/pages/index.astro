@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Hero from '../components/sections/Hero.astro';
+import Features from '../components/sections/Features.astro';
+import HowItWorks from '../components/sections/HowItWorks.astro';
+import Security from '../components/sections/Security.astro';
+import Commands from '../components/sections/Commands.astro';
+import CTA from '../components/sections/CTA.astro';
+---
+
+<Base>
+  <Nav active="home" />
+  <main>
+    <Hero />
+    <Features />
+    <HowItWorks />
+    <Security />
+    <Commands />
+    <CTA />
+  </main>
+  <Footer />
+</Base>

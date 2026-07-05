@@ -1,0 +1,51 @@
+---
+import CopyCommand from '../CopyCommand.astro';
+---
+
+<section class="cta-band divide">
+  <div class="cta-glow" aria-hidden="true"></div>
+  <div class="wrap cta-inner" data-reveal>
+    <span class="kicker">get roosting</span>
+    <h2>Spin one up. It'll still be crowing at dawn.</h2>
+    <p>
+      Install roostr, run <code>roostr doctor</code> to confirm your prerequisites,
+      then <code>roostr init</code> for your first box. The setup guide walks the
+      whole journey from zero to connecting from your phone.
+    </p>
+    <div class="cta-actions">
+      <CopyCommand command="npm install -g roostr" prompt={false} />
+      <a class="btn btn-primary" href="/setup">Open the setup guide →</a>
+    </div>
+    <p class="cta-alt">
+      Prefer bun / pnpm / yarn? <code>bun add -g roostr</code> · <code>pnpm add -g roostr</code>
+    </p>
+  </div>
+</section>
+
+<style>
+  .cta-band {
+    position: relative;
+    overflow: hidden;
+    padding-block: clamp(4rem, 9vw, 7rem);
+  }
+  .cta-glow {
+    position: absolute;
+    inset: auto -20% -50% -20%;
+    height: 130%;
+    background: radial-gradient(50% 60% at 50% 100%, var(--ember-glow), transparent 66%);
+    pointer-events: none;
+  }
+  .cta-inner { position: relative; text-align: center; max-width: 46ch; margin-inline: auto; }
+  .cta-inner h2 { font-size: var(--step-4); margin: 0.9rem 0 1.1rem; }
+  .cta-inner > p { color: var(--dawn-dim); font-size: 1.02rem; }
+  .cta-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+  .cta-alt { margin-top: 1.5rem; font-size: 0.82rem; color: var(--dawn-faint); }
+  .cta-alt code { font-size: 0.78rem; }
+</style>
