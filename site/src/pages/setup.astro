@@ -1,0 +1,357 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Step from '../components/Step.astro';
+import Callout from '../components/Callout.astro';
+import CopyCommand from '../components/CopyCommand.astro';
+
+const toc = [
+  { id: 'install', n: '1', label: 'Install roostr' },
+  { id: 'token', n: '2', label: 'DigitalOcean token' },
+  { id: 'tailscale', n: '3', label: 'Set up Tailscale' },
+  { id: 'gather', n: '4', label: 'Gather what you copied' },
+  { id: 'init', n: '5', label: 'Run guided setup' },
+  { id: 'laptop', n: '6', label: 'Connect from laptop' },
+  { id: 'phone', n: '7', label: 'Connect from phone' },
+  { id: 'work', n: '8', label: 'Do real work' },
+  { id: 'teardown', n: '9', label: 'Tear it down' },
+  { id: 'trouble', n: '·', label: 'Troubleshooting' },
+];
+---
+
+<Base
+  title="Setup guide — roostr"
+  description="From nothing to a hardened box you can reach from your laptop and your phone. A complete, beginner-friendly roostr walkthrough."
+>
+  <Nav active="setup" />
+
+  <header class="guide-hero">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <span class="kicker">setup guide</span>
+      <h1>Zero to a box you reach from your phone.</h1>
+      <p>
+        A complete walkthrough, no prior DevOps assumed. Take it top to bottom.
+        By the end you will have a hardened Linux box on your own DigitalOcean
+        account, Claude Code installed, private access over Tailscale from laptop
+        and phone, and a persistent tmux session that follows you between devices.
+      </p>
+      <p class="guide-cost">
+        A create-use-destroy cycle on the smallest box costs a fraction of a cent.
+        Destroy it when you are done and billing stops.
+      </p>
+    </div>
+  </header>
+
+  <div class="wrap guide-layout">
+    <aside class="toc" aria-label="Guide contents">
+      <p class="toc-title">On this page</p>
+      <nav>
+        {toc.map((t) => (
+          <a href={`#${t.id}`} data-toc={t.id}>
+            <span class="toc-n">{t.n}</span>{t.label}
+          </a>
+        ))}
+      </nav>
+      <a class="toc-repo" href="https://github.com/srexrg/roostr/blob/main/SETUP.md" rel="noopener">
+        View SETUP.md on GitHub →
+      </a>
+    </aside>
+
+    <main class="steps">
+      <Step n="1" id="install" title="Install roostr">
+        <p>Install the CLI globally, then confirm it is on your PATH.</p>
+        <div class="cmd-stack">
+          <CopyCommand command="npm install -g roostr" prompt={false} />
+          <CopyCommand command="roostr --version" />
+        </div>
+        <p>
+          Or from source (requires <a href="https://bun.sh" rel="noopener">Bun</a>):
+          <code>git clone git@github.com:srexrg/roostr.git</code>, then
+          <code>bun install</code> and <code>bun link</code>.
+        </p>
+        <p>Check your environment any time:</p>
+        <CopyCommand command="roostr doctor --fix" />
+        <Callout label="doctor">
+          <code>roostr doctor</code> lists what is present; <code>--fix</code>
+          offers to install what is missing. It is your friend whenever something
+          looks off.
+        </Callout>
+      </Step>
+
+      <Step n="2" id="token" title="Get a DigitalOcean API token">
+        <p>This is the credential roostr uses to create the box on your account.</p>
+        <ol>
+          <li>Open <a href="https://cloud.digitalocean.com/account/api/tokens" rel="noopener">the API tokens page</a>.</li>
+          <li>Click <strong>Generate New Token</strong> and name it <code>roostr</code>.</li>
+          <li><strong>Scope: choose Full Access.</strong> Read-only cannot create a box.</li>
+          <li>Click <strong>Generate Token</strong> and <strong>copy it now</strong>. DigitalOcean shows it only once.</li>
+        </ol>
+        <Callout tone="warn" label="one time">
+          Keep the token handy for step 5. If you lose it, just generate a new one.
+        </Callout>
+      </Step>
+
+      <Step n="3" id="tailscale" title="Set up Tailscale, the private network">
+        <p>
+          Tailscale is what makes your box reachable privately, with no ports open
+          to the internet. Three parts, in order.
+        </p>
+
+        <h3>3a · Apply the access policy (once)</h3>
+        <ol>
+          <li>Open <a href="https://login.tailscale.com/admin/acls" rel="noopener">the ACL editor</a>.</li>
+          <li>Paste the contents of <code>tailscale-acl.hujson</code> from the repo.</li>
+          <li>Click <strong>Save</strong>.</li>
+        </ol>
+        <p>This defines a <code>tag:devbox</code> and locks down what your boxes can reach. You only ever do this once.</p>
+
+        <h3>3b · Create an OAuth client (recommended)</h3>
+        <p>This lets roostr mint a fresh, short-lived key for each box automatically, so you never paste keys by hand.</p>
+        <ol>
+          <li>Open <a href="https://login.tailscale.com/admin/settings/oauth" rel="noopener">the OAuth settings</a> and click <strong>Generate OAuth client</strong>.</li>
+          <li>Description: <code>roostr</code>.</li>
+          <li>Find <strong>Auth Keys</strong> (under Keys) and set it to <strong>Write</strong>.</li>
+          <li>A <strong>tags</strong> selector appears, pick <code>tag:devbox</code>.</li>
+          <li>Click <strong>Generate client</strong> and copy the <strong>Client ID</strong> and <strong>Client secret</strong> (shown once). Keep both for step 5.</li>
+        </ol>
+        <Callout label="no oauth?">
+          You can instead mint a single key at
+          <a href="https://login.tailscale.com/admin/settings/keys" rel="noopener">the keys page</a>:
+          enable Tags = <code>tag:devbox</code>, turn Reusable off, copy the
+          <code>tskey-…</code>, and in step 5 choose "Paste an auth key".
+        </Callout>
+
+        <h3>3c · Run Tailscale on your laptop</h3>
+        <p>
+          Install from <a href="https://tailscale.com/download" rel="noopener">tailscale.com/download</a>,
+          sign in with the same account, and confirm it shows Connected:
+        </p>
+        <CopyCommand command="tailscale status" />
+      </Step>
+
+      <Step n="4" id="gather" title="Gather what you copied">
+        <p>Before running setup, have these in front of you:</p>
+        <ul>
+          <li>DigitalOcean API token (step 2)</li>
+          <li>Tailscale OAuth <strong>Client ID</strong> and <strong>Client secret</strong> (step 3b)</li>
+        </ul>
+      </Step>
+
+      <Step n="5" id="init" title="Run the guided setup">
+        <p>One command walks you through every choice:</p>
+        <CopyCommand command="roostr init" />
+        <p>Here is what to pick:</p>
+        <ol>
+          <li><strong>Cloud provider</strong> → DigitalOcean.</li>
+          <li><strong>API token</strong> → paste it. roostr validates immediately; a wrong or low-scope token is rejected and re-asked.</li>
+          <li><strong>Region</strong> → the one nearest you from the live list.</li>
+          <li><strong>Server size</strong> → the cheapest (e.g. <code>s-1vcpu-1gb</code>) is fine to start.</li>
+          <li><strong>Connectivity mode</strong> → tailscale (private, reachable from your phone).</li>
+          <li><strong>Tailscale auth</strong> → OAuth client, then paste Client ID and Client secret.</li>
+          <li><strong>Agents to install</strong> → claude-code (space to toggle, enter to confirm).</li>
+          <li><strong>SSH public key</strong> → accept the default. No key? roostr offers to generate one.</li>
+          <li><strong>Provision your first box now?</strong> → Yes, then name it <code>box-1</code>.</li>
+        </ol>
+        <p>It provisions in 2 to 3 minutes and prints how to connect.</p>
+      </Step>
+
+      <Step n="6" id="laptop" title="Connect from your laptop">
+        <CopyCommand command="roostr ssh box-1" />
+        <p>You land directly in a persistent tmux session on the box. Try:</p>
+        <div class="cmd-stack">
+          <CopyCommand command="whoami" />
+          <CopyCommand command="claude" />
+        </div>
+        <p>
+          With <code>claude</code>, press <code>c</code> to copy the login URL, open
+          it in a browser, and paste the code back. To leave the session running
+          and disconnect, press <strong>Ctrl-b</strong> then <strong>d</strong>. It
+          keeps running on the box.
+        </p>
+      </Step>
+
+      <Step n="7" id="phone" title="Connect from your phone">
+        <p>You set this up once. After that it is open-app-and-tap.</p>
+
+        <h3>7a · Put your phone on the tailnet</h3>
+        <p>Install the Tailscale app, sign in with the <strong>same</strong> account, and turn it on. That is the only way the phone can reach a private box.</p>
+
+        <h3>7b · Make a key in Termius</h3>
+        <ol>
+          <li>Install <a href="https://termius.com" rel="noopener">Termius</a> and open it.</li>
+          <li><strong>Keychain</strong> → <strong>+</strong> → <strong>Generate Key</strong> → <strong>ED25519</strong> → Save.</li>
+          <li>Open the key → <strong>Export or share a public key</strong> → send it to yourself. Copy the whole <code>ssh-ed25519 AAAA…</code> line.</li>
+        </ol>
+
+        <h3>7c · Authorize the phone key on the box</h3>
+        <p>On your laptop:</p>
+        <CopyCommand command="roostr mobile box-1 --key 'ssh-ed25519 AAAA…'" />
+        <p>You should see <code>authorized your phone key on the box</code> and a connection card.</p>
+        <Callout label="smoother">
+          Enable <strong>SSH ID</strong> in Termius and your keys publish at
+          <code>sshid.io/&lt;handle&gt;</code>, so you can run
+          <code>roostr mobile box-1 --sshid &lt;handle&gt;</code> with no copy-paste.
+        </Callout>
+
+        <h3>7d · Add the box in Termius and connect</h3>
+        <ol>
+          <li>Termius → <strong>+</strong> → <strong>New Host</strong>.</li>
+          <li><strong>Address:</strong> <code>box-1</code> · <strong>Username:</strong> <code>dev</code> · <strong>Key:</strong> the one from 7b.</li>
+          <li>(Optional) enable <strong>Mosh</strong> to survive Wi-Fi/data switches.</li>
+          <li>Save → tap the host.</li>
+        </ol>
+        <p>You land in the <strong>same tmux session</strong> as your laptop, no startup command needed. Start something on the laptop, close the lid, pick it up on the phone, it is right there.</p>
+      </Step>
+
+      <Step n="8" id="work" title="Do real work">
+        <ul>
+          <li><strong>Run Claude:</strong> just <code>claude</code> inside the session. It runs on the box, not your device.</li>
+          <li><strong>Copy a local folder to a running box:</strong></li>
+        </ul>
+        <CopyCommand command="rsync -az --filter=':- .gitignore' ./my-folder dev@box-1:~/" />
+        <p>It lands in <code>~/my-folder</code> on the box. Next time, start a box with a project already on it:</p>
+        <div class="cmd-stack">
+          <CopyCommand command="roostr up --name box-2 --clone owner/repo" />
+          <CopyCommand command="roostr up --name box-2 --copy ./my-folder" />
+        </div>
+      </Step>
+
+      <Step n="9" id="teardown" title="Tear it down (stops billing)" last={true}>
+        <CopyCommand command="roostr destroy box-1 --yes" />
+        <p>
+          This deletes the box from DigitalOcean and removes it from your local
+          state. Do this whenever you are done, the box bills by the hour while it
+          exists. Your day-to-day is just: <code>roostr up</code> → work from
+          anywhere → <code>roostr destroy</code>.
+        </p>
+      </Step>
+
+      <section id="trouble" class="trouble">
+        <h2>Troubleshooting</h2>
+        <dl>
+          <div>
+            <dt>Phone says "Connection refused".</dt>
+            <dd>Tailscale is not on/connected on the phone. Open the app and toggle it on. Check the laptop too with <code>tailscale status</code>.</dd>
+          </div>
+          <div>
+            <dt>Phone or laptop says "Permission denied".</dt>
+            <dd>The key you are connecting with is not authorized on the box. Re-run <code>roostr mobile box-1 --key '…'</code> with that device's public key.</dd>
+          </div>
+          <div>
+            <dt><code>tag not owned</code> when creating the OAuth client.</dt>
+            <dd>The access policy (step 3a) was not saved. Re-apply <code>tailscale-acl.hujson</code>.</dd>
+          </div>
+          <div>
+            <dt>Token rejected during <code>roostr init</code>.</dt>
+            <dd>The DigitalOcean token is wrong or lacks Write scope. Generate a new Full Access token (step 2).</dd>
+          </div>
+          <div>
+            <dt>An option you expected is missing.</dt>
+            <dd>You are running an old build. Reinstall: <code>npm install -g roostr@latest</code>, or rebuild from source.</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+  </div>
+
+  <Footer />
+</Base>
+
+<style>
+  .guide-hero { position: relative; padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(2rem, 4vw, 3rem); overflow: hidden; }
+  .guide-hero .glow {
+    position: absolute; inset: -20% -20% auto -20%; height: 90%;
+    background: radial-gradient(45% 70% at 25% 0%, var(--ember-glow), transparent 62%);
+    pointer-events: none;
+  }
+  .guide-hero h1 { position: relative; font-size: var(--step-4); margin: 0.8rem 0 1.2rem; max-width: 18ch; }
+  .guide-hero p { position: relative; color: var(--dawn-dim); max-width: 60ch; }
+  .guide-cost { margin-top: 1rem; font-size: 0.92rem; color: var(--dawn-faint); }
+
+  .guide-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+    padding-bottom: var(--section);
+    align-items: start;
+  }
+
+  .toc { position: sticky; top: 5rem; }
+  .toc-title {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dawn-faint);
+    margin-bottom: 1rem;
+  }
+  .toc nav { display: grid; gap: 0.15rem; }
+  .toc nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 7px;
+    font-size: 0.88rem;
+    color: var(--dawn-dim);
+    transition: color 0.2s, background 0.2s;
+  }
+  .toc nav a:hover { color: var(--dawn); background: var(--ink-raised); }
+  .toc-n {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--dawn-faint);
+    width: 1.1rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .toc nav a.active { color: var(--ember); }
+  .toc nav a.active .toc-n { color: var(--ember); }
+  .toc-repo {
+    display: inline-block;
+    margin-top: 1.4rem;
+    font-size: 0.82rem;
+    color: var(--dawn-faint);
+    transition: color 0.2s;
+  }
+  .toc-repo:hover { color: var(--ember); }
+
+  .trouble { padding-top: clamp(1rem, 3vw, 2rem); border-top: 1px solid var(--ink-line-soft); }
+  .trouble h2 { font-size: var(--step-2); margin-bottom: 1.4rem; }
+  .trouble dl { display: grid; gap: 1.1rem; }
+  .trouble dt { color: var(--dawn); font-weight: 600; margin-bottom: 0.3rem; }
+  .trouble dd { color: var(--dawn-dim); font-size: 0.94rem; }
+
+  @media (max-width: 820px) {
+    .guide-layout { grid-template-columns: 1fr; }
+    .toc { position: static; margin-bottom: 1rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--ink-line-soft); }
+    .toc nav { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<script>
+  // Scrollspy: highlight the current step in the TOC.
+  const links = new Map<string, HTMLElement>();
+  document.querySelectorAll<HTMLElement>('[data-toc]').forEach((a) => {
+    links.set(a.getAttribute('data-toc')!, a);
+  });
+  const targets = document.querySelectorAll<HTMLElement>('[data-step], #trouble');
+  if ('IntersectionObserver' in window && targets.length) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            links.forEach((el) => el.classList.remove('active'));
+            const id = entry.target.id;
+            links.get(id)?.classList.add('active');
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+    targets.forEach((t) => io.observe(t));
+  }
+</script>

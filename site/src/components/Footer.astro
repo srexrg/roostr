@@ -1,0 +1,107 @@
+---
+import Logo from './Logo.astro';
+const repo = 'https://github.com/srexrg/roostr';
+const year = 2026;
+---
+
+<footer class="foot divide">
+  <div class="wrap foot-inner">
+    <div class="foot-brand">
+      <a href="/" class="brand" aria-label="roostr home">
+        <Logo size={26} />
+        <span>roostr</span>
+      </a>
+      <p>Your keys, your cloud, your box. A tool, not a middleman.</p>
+    </div>
+
+    <nav class="foot-cols" aria-label="Footer">
+      <div>
+        <h4>Start</h4>
+        <a href="/setup">Setup guide</a>
+        <a href="/#features">Features</a>
+        <a href="/#security">Security model</a>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <a href={repo} rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/roostr" rel="noopener">npm</a>
+        <a href={`${repo}/issues`} rel="noopener">Issues</a>
+      </div>
+      <div>
+        <h4>Supported</h4>
+        <span>macOS</span>
+        <span>DigitalOcean</span>
+        <span>Tailscale</span>
+      </div>
+    </nav>
+  </div>
+
+  <div class="wrap foot-base">
+    <span>© {year} roostr · MIT License</span>
+    <span class="foot-note">Boxes bill while they exist. Destroy them when you are done.</span>
+  </div>
+</footer>
+
+<style>
+  .foot { padding-block: clamp(3rem, 6vw, 4.5rem) 2.5rem; }
+  .foot-inner {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
+  }
+  .foot-brand p {
+    margin-top: 0.9rem;
+    color: var(--dawn-dim);
+    font-size: 0.92rem;
+    max-width: 30ch;
+  }
+  .foot-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .foot-cols h4 {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dawn-faint);
+    font-weight: 500;
+    margin-bottom: 0.9rem;
+  }
+  .foot-cols a, .foot-cols span {
+    display: block;
+    color: var(--dawn-dim);
+    font-size: 0.92rem;
+    padding-block: 0.28rem;
+    transition: color 0.2s;
+  }
+  .foot-cols a:hover { color: var(--ember); }
+  .foot-base {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--ink-line-soft);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--dawn-faint);
+  }
+  @media (max-width: 720px) {
+    .foot-inner { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 460px) {
+    .foot-cols { grid-template-columns: 1fr 1fr; }
+  }
+</style>

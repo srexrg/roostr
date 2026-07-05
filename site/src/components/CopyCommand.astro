@@ -1,0 +1,51 @@
+---
+interface Props {
+  command: string;
+  prompt?: boolean;
+}
+const { command, prompt = true } = Astro.props;
+---
+
+<button class="copycmd" data-copy={command} type="button" aria-label={`Copy: ${command}`}>
+  <code class="copycmd-text">{prompt && <span class="cc-prompt">$</span>}{command}</code>
+  <span class="copycmd-icon" data-copy-label aria-hidden="true">copy</span>
+</button>
+
+<style>
+  .copycmd {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+    justify-content: space-between;
+    background: var(--ink-sunk);
+    border: 1px solid var(--ink-line);
+    border-radius: 9px;
+    padding: 0.7rem 0.75rem 0.7rem 1rem;
+    transition: border-color 0.2s, background 0.2s;
+    max-width: 100%;
+  }
+  .copycmd:hover { border-color: var(--dawn-faint); }
+  .copycmd-text {
+    background: none;
+    color: var(--dawn);
+    font-size: 0.9rem;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cc-prompt { color: var(--ember); margin-right: 0.55rem; }
+  .copycmd-icon {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dawn-faint);
+    border: 1px solid var(--ink-line);
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    flex-shrink: 0;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .copycmd.copied .copycmd-icon { color: var(--sage); border-color: var(--sage); }
+</style>

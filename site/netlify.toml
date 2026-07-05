@@ -1,0 +1,16 @@
+# Netlify build config for the roostr marketing site.
+# The site lives in a subdirectory, so set the base to site/ in the
+# Netlify UI (Base directory = site) or deploy from this folder directly.
+
+[build]
+  command = "astro build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

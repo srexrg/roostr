@@ -1,0 +1,141 @@
+---
+const modules = [
+  { name: 'cloud-init builder', note: 'user + hardening + swap + readiness sentinel' },
+  { name: 'readiness polling', note: 'running → public IP → TCP/22 open' },
+  { name: 'local state store', note: '~/.config/roostr/servers.json, lock-guarded' },
+];
+---
+
+<section id="how" class="section divide">
+  <div class="wrap">
+    <div class="how-grid">
+      <header class="how-head" data-reveal>
+        <span class="kicker">how it works</span>
+        <h2>Provider-agnostic behind one interface.</h2>
+        <p>
+          Everything sits behind a single <code>Provider</code> interface, so the
+          orchestrator never branches on a vendor string and adding a cloud is one
+          new file. The whole test suite runs offline against injected fakes:
+          no network, no money.
+        </p>
+      </header>
+
+      <div class="diagram" data-reveal aria-label="roostr architecture: CLI to orchestrator to provider interface to DigitalOcean adapter">
+        <div class="flow">
+          <div class="node node-cli">
+            <span class="node-k">cli</span>commander
+          </div>
+          <span class="arrow" aria-hidden="true">→</span>
+          <div class="node node-core">
+            <span class="node-k">orchestrator</span>the brain
+          </div>
+          <span class="arrow" aria-hidden="true">→</span>
+          <div class="node">
+            <span class="node-k">provider interface</span>one seam
+          </div>
+          <span class="arrow" aria-hidden="true">→</span>
+          <div class="node node-do">
+            <span class="node-k">adapter</span>digitalocean · REST
+          </div>
+        </div>
+
+        <div class="branch-rail" aria-hidden="true"></div>
+
+        <ul class="modules">
+          {modules.map((m) => (
+            <li class="module">
+              <span class="mod-name">{m.name}</span>
+              <span class="mod-note">{m.note}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .how-grid {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+  .how-head h2 { font-size: var(--step-3); margin: 0.7rem 0 1.2rem; }
+  .how-head p { color: var(--dawn-dim); max-width: 40ch; font-size: 0.98rem; }
+
+  .diagram {
+    background: var(--ink-sunk);
+    border: 1px solid var(--ink-line-soft);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.3rem, 3vw, 2rem);
+  }
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .node {
+    flex: 1 1 auto;
+    min-width: 120px;
+    background: var(--ink-raised);
+    border: 1px solid var(--ink-line);
+    border-radius: 10px;
+    padding: 0.85rem 0.95rem;
+    font-size: 0.9rem;
+    color: var(--dawn);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    justify-content: center;
+  }
+  .node-k {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dawn-faint);
+  }
+  .node-core { border-color: var(--ember); }
+  .node-core .node-k { color: var(--ember); }
+  .node-do { border-color: color-mix(in oklab, var(--ember-hot) 45%, var(--ink-line)); }
+  .arrow { align-self: center; color: var(--dawn-faint); font-size: 1.1rem; }
+
+  .branch-rail {
+    height: clamp(1.3rem, 3vw, 2rem);
+    width: 1px;
+    background: linear-gradient(var(--ember), transparent);
+    margin: 0.4rem 0 0 clamp(2rem, 12%, 5rem);
+  }
+  .modules {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+  }
+  .module {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 0.9rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--ink-raised);
+    border: 1px solid var(--ink-line-soft);
+    border-radius: 9px;
+  }
+  .mod-name {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--ember);
+  }
+  .mod-note { font-size: 0.85rem; color: var(--dawn-dim); }
+
+  @media (max-width: 820px) {
+    .how-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .flow { flex-direction: column; }
+    .arrow { transform: rotate(90deg); }
+  }
+</style>

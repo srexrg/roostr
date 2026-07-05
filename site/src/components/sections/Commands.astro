@@ -1,0 +1,99 @@
+---
+import Terminal from '../Terminal.astro';
+
+const dayLines = [
+  '<span class="p">$</span> <span class="cmd">roostr up --name box --clone owner/repo</span>',
+  '<span class="ok">✔</span> <span class="out">box provisioned, repo cloned to ~/repo</span>',
+  '<span class="p">$</span> <span class="cmd">roostr ssh box</span>',
+  '<span class="dim"># …work with claude, close the lid, pick up on your phone…</span>',
+  '<span class="p">$</span> <span class="cmd">roostr destroy box --yes</span>',
+  '<span class="warn">✔</span> <span class="out">deleted · billing stopped</span>',
+];
+
+const commands = [
+  { cmd: 'roostr init', desc: 'Guided setup: prerequisites, config, optional first box' },
+  { cmd: 'roostr up --name <n>', desc: 'Provision a hardened box (--clone owner/repo, --copy ./dir)' },
+  { cmd: 'roostr ssh <n>', desc: 'Connect, landing in a persistent tmux session' },
+  { cmd: 'roostr mobile <n>', desc: 'Authorize a phone key and print a connection card + QR' },
+  { cmd: 'roostr status', desc: 'Live state, IP, and monthly cost from the catalog' },
+  { cmd: 'roostr sizes', desc: 'List live sizes and prices, cheapest first' },
+  { cmd: 'roostr destroy <n> --yes', desc: 'Delete the box and stop billing' },
+  { cmd: 'roostr doctor [--fix]', desc: 'Check prerequisites, and offer to install them' },
+];
+---
+
+<section id="commands" class="section divide">
+  <div class="wrap">
+    <div class="cmd-grid">
+      <div class="cmd-left" data-reveal>
+        <span class="kicker">the whole loop</span>
+        <h2>Up, work from anywhere, destroy.</h2>
+        <p>
+          A create-use-destroy cycle on the smallest box costs a fraction of a
+          cent. status reminds you that boxes bill while they exist, so tear them
+          down when you are done.
+        </p>
+        <Terminal title="roostr — a day" lines={dayLines} />
+      </div>
+
+      <div class="cmd-table" data-reveal>
+        <table>
+          <thead>
+            <tr><th>Command</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            {commands.map((c) => (
+              <tr>
+                <td><code>{c.cmd}</code></td>
+                <td>{c.desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    align-items: start;
+  }
+  .cmd-left h2 { font-size: var(--step-3); margin: 0.7rem 0 1rem; }
+  .cmd-left p { color: var(--dawn-dim); max-width: 44ch; font-size: 0.98rem; margin-bottom: 1.6rem; }
+
+  .cmd-table {
+    border: 1px solid var(--ink-line-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dawn-faint);
+    font-weight: 500;
+    padding: 0.85rem 1rem;
+    background: var(--ink-sunk);
+    border-bottom: 1px solid var(--ink-line-soft);
+  }
+  tbody tr { border-bottom: 1px solid var(--ink-line-soft); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 0.75rem 1rem; vertical-align: top; }
+  tbody td:first-child { white-space: nowrap; }
+  tbody td:last-child { color: var(--dawn-dim); }
+  tbody code { background: none; color: var(--ember); padding: 0; font-size: 0.82rem; }
+
+  @media (max-width: 860px) {
+    .cmd-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 440px) {
+    tbody td:first-child { white-space: normal; }
+  }
+</style>

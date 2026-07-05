@@ -1,0 +1,14 @@
+# build output
+dist/
+.astro/
+
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+
+# vercel / netlify
+.vercel/
+.netlify/

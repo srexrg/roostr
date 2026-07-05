@@ -1,0 +1,10 @@
+---
+// The roost mark: a perch line with a sunrise/comb cresting it. Never a cartoon.
+interface Props { size?: number; }
+const { size = 30 } = Astro.props;
+---
+<svg width={size} height={size} viewBox="0 0 30 30" fill="none" aria-hidden="true" class="logo-mark">
+  <path d="M4 22h22" stroke="var(--dawn-faint)" stroke-width="1.6" stroke-linecap="round" />
+  <path d="M7 22c0-6 4-11 8-11s8 5 8 11" stroke="var(--ember)" stroke-width="1.8" stroke-linecap="round" />
+  <path d="M15 11V5m0 0 3 2.2M15 5l-3 2.2" stroke="var(--ember-hot)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
